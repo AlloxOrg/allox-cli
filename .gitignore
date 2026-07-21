@@ -1,0 +1,22 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+dist/
+*.egg-info/
+.coverage
+htmlcov/
+*.png
+!docs/**/*.png
+.venv*/
+.DS_Store
+.env
+.env.*
+!.env.example
+.allox/
+*.pem
+*.key
+
+# 保留文档所引用的测试截图
+!assert/**/*.png
