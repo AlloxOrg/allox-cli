@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 from datetime import timedelta
 
 import click
@@ -35,6 +36,22 @@ def _resolve_ready_timeout(obj: ClientContext, ready_timeout: str | None) -> flo
         return parse_duration(ready_timeout).total_seconds()
     cfg = obj.resolved_config.get("ready_timeout", "30s")
     return parse_duration(str(cfg)).total_seconds()
+
+
+def _needs_windows_browser_no_sandbox(obj: ClientContext, image: str) -> bool:
+    """Use Chromium's no-sandbox mode for the local Docker Desktop AIO image.
+
+    Docker Desktop does not grant the namespace operations Chromium's Linux
+    sandbox needs. Keep this compatibility fallback narrowly scoped so remote
+    and non-Windows deployments retain Chromium's own sandbox by default.
+    """
+    if sys.platform != "win32":
+        return False
+    domain = str(obj.resolved_config.get("domain") or "").lower()
+    host = domain.rsplit(":", 1)[0].strip("[]")
+    is_local_server = host in {"localhost", "127.0.0.1", "::1"}
+    is_official_aio = image.startswith("ghcr.io/agent-infra/sandbox:")
+    return is_local_server and is_official_aio
 
 
 @sandbox_group.command("create")
@@ -102,13 +119,17 @@ def sandbox_create(
     }
     if timeout_is_set:
         kwargs["timeout"] = timeout
-    if env_kv:
-        kwargs["env"] = dict(env_kv)
+    env = dict(env_kv)
+    if _needs_windows_browser_no_sandbox(obj, image):
+        env.setdefault("BROWSER_NO_SANDBOX", "--no-sandbox")
+    if env:
+        kwargs["env"] = env
 
     ready_info: dict = {}
     if not effective_skip:
         port = obj.aio_port()
         wait = _resolve_ready_timeout(obj, ready_timeout)
+        kwargs["ready_timeout"] = timedelta(seconds=wait)
         health_path = obj.resolved_config.get("aio_health_path", "/v1/shell/sessions")
         kwargs["health_check"] = make_aio_health_check(
             port,
@@ -150,7 +171,14 @@ def sandbox_list(obj: ClientContext, output_format: str | None) -> None:
     """List sandboxes."""
     prepare_output(obj, output_format, allowed=("table", "json", "yaml", "raw"))
     manager = obj.get_manager()
-    sandboxes = manager.list_sandbox_infos(SandboxFilter()).sandbox_infos
+    page = 1
+    sandboxes = []
+    while True:
+        result = manager.list_sandbox_infos(SandboxFilter(page=page))
+        sandboxes.extend(result.sandbox_infos)
+        if not result.pagination.has_next_page:
+            break
+        page += 1
     rows = [{"id": s.id, "state": str(s.status.state)} for s in sandboxes]
     obj.output.print_rows(rows, ["id", "state"], title="Sandboxes")
 
@@ -166,7 +194,12 @@ def sandbox_get(obj: ClientContext, sandbox_id: str | None, output_format: str |
     resolved = obj.resolve_sandbox_id(sandbox_id)
     manager = obj.get_manager()
     sbx = manager.get_sandbox_info(resolved)
-    data = {"id": sbx.id, "state": str(sbx.status.state), "image": getattr(sbx, "image", None)}
+    image_spec = getattr(sbx, "image", None)
+    data = {
+        "id": sbx.id,
+        "state": str(sbx.status.state),
+        "image": getattr(image_spec, "image", None),
+    }
     obj.output.success_panel(data, title="Sandbox")
 
 
@@ -206,6 +239,40 @@ def sandbox_renew(
         {"sandbox_id": resolved, "expires_at": str(resp.expires_at)},
         title="Sandbox Renewed",
     )
+
+
+@sandbox_group.command("pause")
+@click.argument("sandbox_id", required=False, default=None)
+@output_option("table", "json", "yaml")
+@click.pass_obj
+@handle_errors
+def sandbox_pause(
+    obj: ClientContext,
+    sandbox_id: str | None,
+    output_format: str | None,
+) -> None:
+    """Pause a running sandbox while retaining its state."""
+    prepare_output(obj, output_format, allowed=("table", "json", "yaml", "raw"))
+    resolved = obj.resolve_sandbox_id(sandbox_id)
+    obj.get_manager().pause_sandbox(resolved)
+    obj.output.success_panel({"id": resolved, "status": "paused"}, title="Sandbox Paused")
+
+
+@sandbox_group.command("resume")
+@click.argument("sandbox_id", required=False, default=None)
+@output_option("table", "json", "yaml")
+@click.pass_obj
+@handle_errors
+def sandbox_resume(
+    obj: ClientContext,
+    sandbox_id: str | None,
+    output_format: str | None,
+) -> None:
+    """Resume a paused sandbox."""
+    prepare_output(obj, output_format, allowed=("table", "json", "yaml", "raw"))
+    resolved = obj.resolve_sandbox_id(sandbox_id)
+    obj.get_manager().resume_sandbox(resolved)
+    obj.output.success_panel({"id": resolved, "status": "running"}, title="Sandbox Resumed")
 
 
 @sandbox_group.command("kill")

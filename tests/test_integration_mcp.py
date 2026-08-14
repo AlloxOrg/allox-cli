@@ -20,33 +20,17 @@ _BROWSER_CALL_TOOLS = ("browser_screenshot", "browser_navigate")
 
 @pytest.fixture(scope="module")
 def require_server(require_opensandbox_server):
-    if (
-        shutil.which("docker")
-        and subprocess.run(
-            ["docker", "info"],
-            capture_output=True,
-            timeout=10,
-        ).returncode
-        != 0
-    ):
+    if shutil.which("docker") and subprocess.run(
+        ["docker", "info"],
+        capture_output=True,
+        timeout=10,
+    ).returncode != 0:
         pytest.skip("Docker daemon not running")
 
 
 @pytest.fixture(scope="module")
 def sandbox_id(module_runner, require_server):
-    create = module_runner(
-        [
-            "sandbox",
-            "create",
-            "-o",
-            "json",
-            "--timeout",
-            "5m",
-            "--env",
-            "BROWSER_NO_SANDBOX",
-            "--no-sandbox",
-        ]
-    )
+    create = module_runner(["sandbox", "create", "-o", "json", "--timeout", "5m"])
     assert create.exit_code == 0, create.output
     sid = json.loads(create.output)["id"]
     yield sid

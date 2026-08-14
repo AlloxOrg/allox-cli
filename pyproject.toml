@@ -13,7 +13,7 @@ authors = [{ name = "Allox" }]
 keywords = ["sandbox", "aio", "agent", "opensandbox", "cli"]
 dependencies = [
     "opensandbox>=0.1.9,<0.2.0",
-    "agent-sandbox>=0.0.30,<0.1.0",
+    "agent-sandbox>=0.0.18",
     "click>=8.1.0,<9.0",
     "rich>=13.0.0,<14.0",
     "httpx>=0.27.0",
@@ -40,7 +40,7 @@ package = true
 
 # 使用本地 OpenSandbox SDK，避免 PyPI wheel 在部分环境下 adapter/converter 缺 .py 文件
 [tool.uv.sources]
-opensandbox = { path = "../OpenSandbox/sdks/sandbox/python", editable = false }
+opensandbox = { path = "OpenSandbox/sdks/sandbox/python", editable = false }
 
 [dependency-groups]
 dev = [

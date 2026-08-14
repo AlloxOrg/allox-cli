@@ -8,6 +8,7 @@ from typing import Any
 import click
 
 from allox.context import ClientContext
+from allox.checkpoint import checkpoint_after_success
 from allox.session import get_current_session
 from allox.mcp_utils import build_mcp_request, format_mcp_call_raw, model_to_dict, parse_mcp_target
 from allox.utils import (
@@ -55,12 +56,7 @@ def aio_group(ctx: click.Context) -> None:
     context_settings={"allow_interspersed_args": False},
 )
 @click.option("--workdir", "-w", default=None, help="Working directory (absolute path in sandbox).")
-@click.option(
-    "--timeout",
-    type=click.IntRange(min=1),
-    default=60,
-    help="Maximum command runtime in seconds; the command is forcibly stopped when exceeded.",
-)
+@click.option("--timeout", type=int, default=60, help="Command timeout in seconds.")
 @output_option("raw", "json")
 @click.argument("args", nargs=-1, type=click.UNPROCESSED)
 @click.pass_obj
@@ -85,71 +81,21 @@ def aio_exec(
     resolved = obj.resolve_sandbox_id(sandbox_id)
     cmd = " ".join(command)
     client = obj.aio_client(resolved)
-    # agent-sandbox's ``timeout`` is only a wait timeout: the API returns a
-    # ``running`` result and leaves the command alive.  Allox exposes a command
-    # execution timeout, so use ``hard_timeout`` and allow a small amount of
-    # transport overhead beyond the server-side deadline.
-    kwargs: dict[str, Any] = {
-        "command": cmd,
-        "async_mode": False,
-        "hard_timeout": timeout,
-        "request_options": {"timeout_in_seconds": timeout + 10},
-    }
+    kwargs: dict[str, Any] = {"command": cmd, "timeout": timeout}
     if workdir:
         kwargs["exec_dir"] = workdir
     result = client.shell.exec_command(**kwargs)
-    data = result.data
-    if data is None:
-        raise click.ClickException("AIO shell returned no command result")
-
-    status = getattr(data, "status", None)
-    output = getattr(data, "output", None)
-    exit_code = getattr(data, "exit_code", None)
-    message = getattr(result, "message", None)
-
-    if getattr(result, "success", None) is False:
-        cli_exit_code = 1
-    elif status in {"hard_timeout", "no_change_timeout", "running"}:
-        cli_exit_code = 124
-    elif isinstance(exit_code, int) and 0 <= exit_code <= 255:
-        cli_exit_code = exit_code
-    else:
-        cli_exit_code = 1
-
-    error: str | None = None
-    if status == "hard_timeout":
-        error = f"Command timed out after {timeout} seconds"
-    elif status == "no_change_timeout":
-        error = "Command stopped after producing no new output"
-    elif status == "running":
-        error = "Command is still running"
-    elif getattr(result, "success", None) is False:
-        error = str(message or "AIO shell command failed")
-    elif cli_exit_code != 0:
-        if isinstance(exit_code, int):
-            error = f"Command exited with code {exit_code}"
-        else:
-            error = "Command result did not include a valid exit code"
-
+    exit_code = getattr(result.data, "exit_code", None)
     if obj.output.fmt == "json":
         import json
 
-        payload = {
-            "session_id": getattr(data, "session_id", None),
-            "status": status,
-            "output": output,
-            "exit_code": exit_code,
-            "message": message,
-            "error": error,
-        }
-        click.echo(json.dumps(payload))
-    else:
-        click.echo(output or "", nl=False)
-        if error:
-            click.echo(error, err=True)
-
-    if cli_exit_code != 0:
-        raise SystemExit(cli_exit_code)
+        click.echo(json.dumps({"output": result.data.output, "exit_code": exit_code}))
+        if exit_code in (0, None):
+            checkpoint_after_success(obj, resolved, "aio.exec")
+        return
+    click.echo(result.data.output, nl=False)
+    if exit_code in (0, None):
+        checkpoint_after_success(obj, resolved, "aio.exec")
 
 
 @aio_group.command("read")
@@ -158,9 +104,7 @@ def aio_exec(
 @output_option("raw", "json")
 @click.pass_obj
 @handle_errors
-def aio_read(
-    obj: ClientContext, sandbox_id: str | None, path: str, output_format: str | None
-) -> None:
+def aio_read(obj: ClientContext, sandbox_id: str | None, path: str, output_format: str | None) -> None:
     """Read a file from the AIO sandbox."""
     prepare_output(obj, output_format, allowed=("raw", "json"), fallback="raw")
     resolved = obj.resolve_sandbox_id(sandbox_id)
@@ -176,9 +120,7 @@ def aio_read(
 
 @aio_group.command("screenshot")
 @click.argument("sandbox_id", required=False, default=None)
-@click.option(
-    "-f", "--file", "out_path", type=click.Path(), default="screenshot.png", help="Local PNG path."
-)
+@click.option("-f", "--file", "out_path", type=click.Path(), default="screenshot.png", help="Local PNG path.")
 @output_option("table", "json", "yaml")
 @click.pass_obj
 @handle_errors
@@ -239,12 +181,15 @@ def aio_jupyter_run(
     payload = model_to_dict(result.data)
     if obj.output.fmt == "json":
         emit_json(payload)
+        if result.data.status == "ok":
+            checkpoint_after_success(obj, resolved, "aio.jupyter")
         return
     text = _format_jupyter_outputs(result.data.outputs)
     if text:
         click.echo(text, nl=not text.endswith("\n"))
     if result.data.status != "ok":
         raise click.ClickException(f"Jupyter execution status: {result.data.status}")
+    checkpoint_after_success(obj, resolved, "aio.jupyter")
 
 
 @click.group("browser", invoke_without_command=True)

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 import click
 
 from allox.config import DEFAULT_CONFIG_PATH, init_config_file, load_config_file, resolve_config
@@ -38,16 +40,18 @@ def config_init(obj: ClientContext, force: bool) -> None:
 @handle_errors
 def config_show(obj: ClientContext, output_format: str) -> None:
     """Show resolved configuration."""
+    resolved = resolve_config(config_path=obj.config_path)
+    resolved["color"] = obj.resolved_config.get("color", resolved.get("color", True))
     data = {
         "config_path": str(obj.config_path),
-        "resolved": obj.resolved_config,
+        "resolved": resolved,
         "file": load_config_file(obj.config_path),
     }
     if output_format == "json":
         emit_json(data)
         return
     click.echo(f"Config file: {obj.config_path}")
-    for key, value in obj.resolved_config.items():
+    for key, value in resolved.items():
         click.echo(f"  {key}: {value}")
 
 
@@ -83,13 +87,14 @@ def config_set(obj: ClientContext, key: str, value: str) -> None:
             if isinstance(v, bool):
                 lines.append(f"{k} = {'true' if v else 'false'}")
             elif isinstance(v, list):
-                inner = ", ".join(repr(x) for x in v)
+                inner = ", ".join(json.dumps(x, ensure_ascii=False) for x in v)
                 lines.append(f"{k} = [{inner}]")
+            elif isinstance(v, int | float):
+                lines.append(f"{k} = {v}")
             else:
-                sv = str(v)
+                sv = json.dumps(str(v), ensure_ascii=False)
                 # TOML bare strings cannot contain ':' — quote host:port etc.
-                needs_quotes = " " in sv or ":" in sv or sv in ("true", "false")
-                lines.append(f'{k} = "{sv}"' if needs_quotes else f"{k} = {sv}")
+                lines.append(f"{k} = {sv}")
         lines.append("")
     path.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
     click.echo(f"Updated {key} in {path}")

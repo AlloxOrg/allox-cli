@@ -11,6 +11,7 @@ from opensandbox.models.execd import RunCommandOpts
 from opensandbox.models.execd_sync import ExecutionHandlersSync
 
 from allox.context import ClientContext
+from allox.checkpoint import checkpoint_after_success
 from allox.session import get_current_session
 from allox.utils import (
     handle_errors,
@@ -75,6 +76,7 @@ def run_command(
         if obj.verbose:
             click.echo(f"[verbose] execd run: {cmd_str!r} (sandbox={resolved_id})", err=True)
         execution = sandbox.commands.run(cmd_str, opts=opts, handlers=handlers)
+        succeeded = not execution.error and getattr(execution, "exit_code", 0) in (0, None)
 
         if last_text and not last_text.endswith("\n"):
             sys.stdout.write("\n")
@@ -97,6 +99,8 @@ def run_command(
             )
             if execution.error:
                 sys.exit(1)
+            if succeeded:
+                checkpoint_after_success(obj, resolved_id, "run")
             return
 
         if execution.error:
@@ -105,5 +109,7 @@ def run_command(
                 title="Execution Error",
             )
             sys.exit(1)
+        if succeeded:
+            checkpoint_after_success(obj, resolved_id, "run")
     finally:
         sandbox.close()

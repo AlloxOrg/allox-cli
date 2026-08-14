@@ -9,12 +9,13 @@ from rich.console import Console
 
 from allox import __version__
 from allox.commands.aio import aio_group
+from allox.commands.checkpoint_cmd import checkpoint_group
 from allox.commands.config_cmd import config_group
 from allox.commands.file_cmd import file_group
 from allox.commands.run_cmd import run_command
 from allox.commands.sandbox import sandbox_group
 from allox.commands.session_cmd import session_group
-from allox.config import DEFAULT_CONFIG_PATH, resolve_config, resolve_config_path
+from allox.config import resolve_config, resolve_config_path
 from allox.context import ClientContext
 
 BANNER = r"""[bold cyan]
@@ -111,3 +112,4 @@ cli.add_command(session_group)
 cli.add_command(config_group)
 cli.add_command(run_command)
 cli.add_command(file_group)
+cli.add_command(checkpoint_group)

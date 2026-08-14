@@ -40,6 +40,14 @@ DEFAULT_CONFIG_TEMPLATE = """\
 # aio_health_path = "/v1/shell/sessions"
 # ready_timeout = "30s"
 # skip_health_check = false   # true for non-AIO images (e.g. code-interpreter)
+
+[checkpoint]
+# enabled = false
+# on_success = false
+# operations = ["run", "file.write", "file.upload", "aio.exec", "aio.jupyter"]
+# interval = "5m"
+# strict = false
+# create_timeout = 900
 """
 
 
@@ -105,6 +113,7 @@ def resolve_config(
     aio_health_path = defaults.get("aio_health_path", "/v1/shell/sessions")
     ready_timeout = defaults.get("ready_timeout", "30s")
     skip_health_check = bool(defaults.get("skip_health_check", False))
+    checkpoint = file_cfg.get("checkpoint", {})
 
     return {
         "api_key": api_key,
@@ -120,6 +129,14 @@ def resolve_config(
         "aio_health_path": aio_health_path,
         "ready_timeout": ready_timeout,
         "skip_health_check": skip_health_check,
+        "checkpoint_enabled": bool(checkpoint.get("enabled", False)),
+        "checkpoint_on_success": bool(checkpoint.get("on_success", False)),
+        "checkpoint_operations": list(checkpoint.get(
+            "operations", ["run", "file.write", "file.upload", "aio.exec", "aio.jupyter"]
+        )),
+        "checkpoint_interval": checkpoint.get("interval", "5m"),
+        "checkpoint_strict": bool(checkpoint.get("strict", False)),
+        "checkpoint_create_timeout": int(checkpoint.get("create_timeout", 900)),
     }
 
 

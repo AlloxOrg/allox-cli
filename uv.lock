@@ -38,10 +38,10 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "agent-sandbox", specifier = ">=0.0.30,<0.1.0" },
+    { name = "agent-sandbox", specifier = ">=0.0.18" },
     { name = "click", specifier = ">=8.1.0,<9.0" },
     { name = "httpx", specifier = ">=0.27.0" },
-    { name = "opensandbox", directory = "../OpenSandbox/sdks/sandbox/python" },
+    { name = "opensandbox", directory = "OpenSandbox/sdks/sandbox/python" },
     { name = "pyyaml", specifier = ">=6.0.0" },
     { name = "rich", specifier = ">=13.0.0,<14.0" },
     { name = "tomli", marker = "python_full_version < '3.11'", specifier = ">=2.0.0" },
@@ -210,7 +210,7 @@ wheels = [
 
 [[package]]
 name = "opensandbox"
-source = { directory = "../OpenSandbox/sdks/sandbox/python" }
+source = { directory = "OpenSandbox/sdks/sandbox/python" }
 dependencies = [
     { name = "attrs" },
     { name = "httpx" },

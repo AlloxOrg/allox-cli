@@ -1,513 +1,321 @@
+<div align="center">
+
+<img src="./assets/allox-logo.png" alt="Allox logo" width="128" />
+
 # Allox CLI
 
-**Allox** = **All**-in-**O**ne + bo**x** — 面向 Agent 的沙箱命令行工具。
+**面向 AI Agent 的可恢复执行工作区**
 
-| 层级 | 职责 |
-|------|------|
-| **allox** | 产品命令、默认 AIO 镜像、本地配置 |
-| **opensandbox-server** | 沙箱生命周期与 endpoint（默认 `http://localhost:8080`） |
-| **AIO 镜像** | 容器内 Agent API（`/v1/*`，默认端口 **8080**） |
+从环境创建、任务执行到断点恢复，用一套 CLI 完成完整 Agent 工作流。
 
-设计参考 OpenSandbox 的 `osb`，但为独立包，不 fork 其 CLI。  
-任务清单见 [ROADMAP.md](./ROADMAP.md)；阶段 1 测试记录见 [docs/PHASE1_TESTING.md](./docs/PHASE1_TESTING.md)；阶段 2 见 [docs/PHASE2_TESTING.md](./docs/PHASE2_TESTING.md)；阶段 3 自定义镜像见 [docs/CUSTOM_IMAGE.md](./docs/CUSTOM_IMAGE.md)。
+[![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![License](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 
----
+[Features](#features) · [Quick Start](#quick-start) · [Demo](#demo-end-to-end-agent-workflows) · [Tests](#tests-validation-and-quality) · [Documentation](#documentation)
 
-## 安装
+</div>
+
+Allox 将隔离环境、Agent 工具、文件传输、当前会话和 Checkpoint 恢复统一到一个命令入口。它既适合开发者在终端交互使用，也提供稳定的结构化输出供 Agent、脚本和 CI 调用。
+
+## Features
+
+- **可恢复工作区**：支持手动、定时和操作成功后的 Checkpoint，可恢复 `latest` 或指定版本。
+- **Stateful Session**：创建或恢复后自动选中当前环境；后续命令可以省略 ID，销毁后自动清理。
+- **Agent-ready 工具集**：统一使用 Shell、File、Browser、Jupyter、Screenshot 和 MCP 能力。
+- **Runtime Readiness**：等待 Agent 服务真正可用，而不只是等待容器启动，并报告就绪耗时。
+- **可靠文件传输**：支持二进制流式与递归传输；下载使用临时 staging，并拒绝符号链接和路径逃逸。
+- **MCP 原生入口**：发现 MCP Server、列出工具并直接调用。
+- **多环境配置**：通过 Profile 切换 dev、staging、prod、自定义镜像或轻量执行环境。
+- **自动化友好**：按场景提供 `table`、`json`、`yaml` 和 `raw` 输出。
+
+## Quick Start
+
+### Install
+
+当前版本从源码安装：
 
 ```bash
+git clone https://github.com/AlloxOrg/allox-cli.git
 cd allox-cli
-# 推荐：非 editable 安装，避免 Python 3.12 下 .venv/bin/allox 找不到包
+
+# 当前项目从本地路径加载 OpenSandbox Python SDK
+git clone --depth 1 https://github.com/opensandbox-group/OpenSandbox.git OpenSandbox
+
 uv sync --no-editable
+```
+
+激活虚拟环境：
+
+```bash
+# Linux / macOS
 source .venv/bin/activate
+
+# Windows PowerShell
+.venv\Scripts\Activate.ps1
+```
+
+验证安装：
+
+```bash
+allox --version
 allox --help
 ```
 
-> **重要：`uv run allox` 会默认把项目重装为 editable，可能覆盖上面的修复，导致再次出现 `No module named 'allox'`。**  
-> 日常请用 **`allox`**（已 `activate`）或 **`uv run --no-editable allox`**。若已踩坑，重新执行一次 `uv sync --no-editable --reinstall` 即可。
-
-**开发中改了 `src/allox` 代码后**，`.venv` 里可能是旧 wheel，表现为：`session` 命令不存在、`~/.allox/sessions.json` 未生成。请任选其一：
+不激活虚拟环境时，可使用 `uv run --no-editable allox ...`。开发中修改 `src/allox` 后，执行：
 
 ```bash
-# 推荐：重装本包
 uv sync --reinstall-package allox-cli
-
-# 或快速同步（不解析依赖）
-rsync -a src/allox/ .venv/lib/python3.12/site-packages/allox/
 ```
 
-验证：`allox --help` 应出现 `session`、`run`、`file` 子命令。
+> 不建议直接执行 `uv run allox`：它可能将项目切换为 editable 安装，覆盖当前安装方式。
 
-开发依赖（pytest、ruff）已包含在 `uv sync` 的 dev group 中。
+### Configure
 
----
+Allox 当前使用 [OpenSandbox](https://github.com/opensandbox-group/OpenSandbox) 管理环境生命周期，默认使用 [AIO Sandbox](https://github.com/agent-infra/sandbox) 提供 Agent Runtime。两者都需要在本机准备，但不需要手动运行它们的源码：OpenSandbox Server 通过 Python 包安装并作为本地服务启动，AIO Sandbox 通过 Docker 拉取并由 Server 按需创建。开始前请确认 Docker 已运行。
 
-## 平台准备：拉取镜像与启动 OpenSandbox Server
-
-使用 `allox` 前需在本机准备好 **Docker**、**AIO 沙箱镜像** 与 **opensandbox-server**（Allox 只负责 CLI，不替代 Server）。
-
-### 前置条件
-
-- **Docker** 已安装并运行（`docker version` 正常）
-- **Python ≥ 3.10**（推荐用 [uv](https://github.com/astral-sh/uv) 管理环境）
-- macOS 若使用 **Colima** 而非 Docker Desktop，需先设置 `DOCKER_HOST`（例如 `export DOCKER_HOST=unix://$HOME/.colima/default/docker.sock`）
-
-### 1. 安装 opensandbox-server
+#### Start the Server
 
 ```bash
-# 推荐
+# 安装到当前 uv 虚拟环境
 uv pip install opensandbox-server
 
-# 或
-pip install opensandbox-server
-```
-
-首次使用需生成 Server 配置文件（默认 `~/.sandbox.toml`）：
-
-```bash
+# 生成本地 Server 配置并启动
 opensandbox-server init-config ~/.sandbox.toml --example docker
-# 覆盖已有文件时加 --force
-```
-
-可按需编辑 `~/.sandbox.toml` 中的 `server.host` / `server.port`（默认 `0.0.0.0:8080`）。完整配置项见 [OpenSandbox server/configuration.md](../OpenSandbox/server/configuration.md)。
-
-### 2. 拉取 AIO 沙箱镜像
-
-Allox 默认创建沙箱时使用官方 AIO 镜像（与 `defaults.image` 一致）：
-
-```bash
-docker pull ghcr.io/agent-infra/sandbox:latest
-```
-
-生产环境请 **pin 具体 tag**，避免裸 `latest`，例如：
-
-```bash
-docker pull ghcr.io/agent-infra/sandbox:<pinned-tag>
-allox config set defaults.image ghcr.io/agent-infra/sandbox:<pinned-tag>
-```
-
-自定义衍生镜像见 [docs/CUSTOM_IMAGE.md](./docs/CUSTOM_IMAGE.md)。
-
-### 3. 启动 Server
-
-在**单独终端**保持 Server 运行：
-
-```bash
-opensandbox-server
-# 或指定配置：opensandbox-server --config ~/.sandbox.toml
-```
-
-非交互环境（CI、部分容器）若未配置 `server.api_key`，启动时可能要求确认风险，可设置：
-
-```bash
-export OPENSANDBOX_INSECURE_SERVER=YES
 opensandbox-server
 ```
 
-验证 Server 就绪（端口与 `~/.sandbox.toml` 中 `server.port` 一致，默认 **8080**）：
+在另一个终端验证：
 
 ```bash
 curl http://127.0.0.1:8080/health
-# 期望：{"status":"healthy"}
+# {"status":"healthy"}
 ```
 
-随后配置 Allox 指向同一地址：
+生产环境应在 `~/.sandbox.toml` 中配置 API Key。仅限本地开发且明确接受无鉴权风险时，可设置 `OPENSANDBOX_INSECURE_SERVER=YES`。
+
+#### Pull the Default Image
 
 ```bash
-allox config init
-allox config set connection.domain localhost:8080
-allox config set connection.protocol http
+# 下载默认 Agent Runtime 到本机 Docker
+docker pull ghcr.io/agent-infra/sandbox:latest
 ```
 
-若 Server 启用了 API Key，还需 `allox config set connection.api_key YOUR_KEY`（请求头 `OPEN-SANDBOX-API-KEY`）。
+生产环境应固定具体 tag，避免使用 `latest`。
 
----
-
-## 端口说明（避免混淆）
-
-| 服务 | 默认地址 | 用途 |
-|------|----------|------|
-| **OpenSandbox Server** | `http://localhost:8080` | `allox config` 里的 `connection.domain`（如 `localhost:8080`） |
-| **AIO API（容器内）** | 经 Server 代理的 endpoint | `defaults.aio_port`（默认 **8080**），健康检查 `GET /v1/shell/sessions` |
-
-配置 Server 时请始终让 `connection.domain` 与 `opensandbox-server` 监听端口一致；**不要**把 Server 端口写成容器内其它服务端口。
-
----
-
-## 配置
-
-**优先级**（高 → 低）：全局 CLI 参数 → 环境变量 → `~/.allox/config.toml` → 代码内默认值。
-
-### 初始化
+#### Initialize Allox
 
 ```bash
 allox config init
 allox config set connection.domain localhost:8080
 allox config set connection.protocol http
 allox config show
-allox config path
 ```
 
-### 环境变量（可选）
-
-| 变量 | 对应配置 |
-|------|----------|
-| `ALLOX_DOMAIN` / `OPEN_SANDBOX_DOMAIN` | `connection.domain` |
-| `ALLOX_API_KEY` / `OPEN_SANDBOX_API_KEY` | `connection.api_key` |
-| `ALLOX_PROTOCOL` | `connection.protocol` |
-
-### 默认值（未在 config 中覆盖时）
-
-| 项 | 默认值 |
-|----|--------|
-| `defaults.image` | `ghcr.io/agent-infra/sandbox:latest` |
-| `defaults.entrypoint` | `["/opt/gem/run.sh"]` |
-| `defaults.timeout` | `30m` |
-| `defaults.aio_port` | `8080` |
-| `defaults.aio_health_path` | `/v1/shell/sessions` |
-| `defaults.ready_timeout` | `30s` |
-| `defaults.skip_health_check` | `false`（code-interpreter 等非 AIO 镜像设为 `true`） |
-
-生产环境请 pin 镜像 tag，避免使用裸 `latest`。
-
-### 自定义 AIO 镜像（阶段 3）
-
-在官方镜像上叠加依赖与服务，换 tag 即可升级，CLI 无需改动：
+如果服务端开启了鉴权：
 
 ```bash
-cd docker && chmod +x build.sh && ./build.sh
-allox config set defaults.image allox/aio-custom:v1
-allox sandbox create -o json
+allox config set connection.api_key YOUR_API_KEY
 ```
 
-详见 [docs/CUSTOM_IMAGE.md](./docs/CUSTOM_IMAGE.md)。Code Interpreter 轻量沙箱见 [docs/CODE_INTERPRETER.md](./docs/CODE_INTERPRETER.md)（`--profile code`）。
+Allox 会依次读取命令行选项、环境变量、本地配置文件和内置默认配置，位置靠前的设置会覆盖后面的设置。需要在不同环境间切换时，可通过 `--profile dev|staging|prod|custom|code` 选择对应的 `~/.allox/<profile>.toml` 配置文件。
 
-### 指定配置文件 / Profile
+## Demo: End-to-End Agent Workflows
+
+以下示例默认已经完成安装与配置。先确认 Docker、服务端和 Allox 配置可用：
 
 ```bash
-# 显式配置文件
-allox --config ~/.allox/dev.toml sandbox list
-
-# Profile 快捷方式（映射到 ~/.allox/<profile>.toml）
-allox --profile dev sandbox create -o json
-allox --profile staging sandbox list
-allox --profile prod sandbox list
+docker info
+curl http://127.0.0.1:8080/health
+allox config show
 ```
 
-#### 多环境示例（dev / staging / prod）
+### 1. Complete Agent Workflow
+
+创建环境后，Allox 会自动将其记录为当前 session。下面的操作均不需要重复传入 `sandbox_id`：
 
 ```bash
-# dev — 本机 OpenSandbox
-allox config init --force   # 先初始化默认 config.toml 作模板
-cp ~/.allox/config.toml ~/.allox/dev.toml
-allox --config ~/.allox/dev.toml config set connection.domain localhost:8080
+# 创建环境并等待 Runtime 就绪
+allox sandbox create --timeout 30m -o json
+allox session current -o json
 
-# staging — 内网测试集群
-cp ~/.allox/config.toml ~/.allox/staging.toml
-allox --config ~/.allox/staging.toml config set connection.domain staging-sandbox.internal:8080
-allox --config ~/.allox/staging.toml config set connection.protocol http
+# Shell
+allox aio exec -- python3 -c "print('hello from allox')"
 
-# prod — 生产（HTTPS + API Key）
-cp ~/.allox/config.toml ~/.allox/prod.toml
-allox --config ~/.allox/prod.toml config set connection.domain sandbox.example.com
-allox --config ~/.allox/prod.toml config set connection.protocol https
-allox --config ~/.allox/prod.toml config set connection.api_key YOUR_KEY
-allox --config ~/.allox/prod.toml config set defaults.image ghcr.io/agent-infra/sandbox:<pinned-tag>
-```
+# Jupyter；结果应包含 status: ok 和输出 4
+allox aio jupyter run -c "print(2 + 2)" -o json
 
-或使用 `--profile dev|staging|prod`（等价于 `--config ~/.allox/<profile>.toml`）。
+# Browser；输出 CDP/VNC 地址，并保存截图到本地
+allox aio browser info -o json
+allox aio screenshot -f allox-demo.png -o json
 
----
+# 单文件上传、读取和下载
+allox file upload ./README.md /tmp/allox-README.md -o json
+allox aio read /tmp/allox-README.md
+allox file download /tmp/allox-README.md ./README.from-allox.md -o json
 
-## 快速开始
+# 递归目录传输
+mkdir -p .allox-demo/nested
+printf "hello\n" > .allox-demo/nested/result.txt
+allox file upload --recursive ./.allox-demo /tmp/allox-demo -o json
+allox file download --recursive /tmp/allox-demo ./allox-demo-output -o json
 
-**前置**：已完成上文 [平台准备](#平台准备拉取镜像与启动-opensandbox-server)（Docker、AIO 镜像、`opensandbox-server` 均在运行）。
+# 销毁当前环境；current session 会被自动清除
+allox sandbox kill -o json
 
-```bash
-# 终端 2 — CLI（Server 已在另一终端运行）
-cd allox-cli
-source .venv/bin/activate   # 若尚未 activate
-
-# 创建沙箱（JSON 便于脚本解析 id、aio_url；自动写入当前 session）
-allox sandbox create -o json
-
-# 省略 sandbox_id（使用当前 session）
+# 预期提示不存在当前 session
 allox session current
-allox aio exec ls -la
-allox aio screenshot -f test.png
-allox sandbox kill
+
+# 本地生成：allox-demo.png、README.from-allox.md、.allox-demo/、allox-demo-output/
+# 确认结果后可自行删除
 ```
 
-端到端自动化（需 Docker + Server）：
+### 2. Checkpoint and Restore
+
+下面的 Bash 示例使用 [`jq`](https://jqlang.github.io/jq/) 从 JSON 输出中读取 ID，完整演示“保存 V1 → 修改为 V2 → 恢复 V1 → 验证 → 清理”：
 
 ```bash
-uv run pytest -m integration tests/test_integration_e2e.py -v
+# 创建源环境并记录 ID
+SOURCE_ID=$(allox sandbox create --timeout 30m -o json | jq -r '.id')
+
+# 写入 V1 并保存 Checkpoint
+allox aio exec -- sh -c "echo v1 > /home/gem/version.txt"
+CHECKPOINT_ID=$(allox checkpoint create --name v1 -o json | jq -r '.id')
+
+# 将当前工作区修改为 V2
+allox aio exec -- sh -c "echo v2 > /home/gem/version.txt"
+allox checkpoint list -o json
+
+# 从 V1 Checkpoint 创建新环境，并自动切换 current session
+RESTORED_ID=$(allox checkpoint restore "$CHECKPOINT_ID" --timeout 30m -o json | jq -r '.id')
+
+# 预期输出 v1
+allox aio exec -- cat /home/gem/version.txt
+
+# 恢复会创建新环境，不会覆盖或销毁源环境
+# 因此需要删除 Checkpoint，并显式清理恢复环境和源环境
+allox checkpoint delete "$CHECKPOINT_ID" -o json
+allox sandbox kill "$RESTORED_ID" -o json
+allox sandbox kill "$SOURCE_ID" -o json
 ```
 
----
+### 3. Automatic Checkpoint
 
-## 全局选项
+在 `~/.allox/config.toml` 中启用后，Allox 只在指定操作成功时创建 Checkpoint：
 
-所有子命令均可使用：
-
-```bash
-allox [全局选项] <命令组> <子命令> ...
+```toml
+# ~/.allox/config.toml
+[checkpoint]
+enabled = true
+on_success = true
+operations = ["run", "file.write", "file.upload", "aio.exec", "aio.jupyter"]
+interval = "5m"
+strict = false
 ```
 
-| 选项 | 说明 |
-|------|------|
-| `--domain` | 覆盖 OpenSandbox Server 地址（host:port） |
-| `--api-key` | API Key（Header `OPEN-SANDBOX-API-KEY`） |
-| `--protocol` | `http` 或 `https` |
-| `--config PATH` | 配置文件路径 |
-| `--profile dev\|staging\|prod` | Profile 配置文件（`~/.allox/<profile>.toml`） |
-| `-v`, `--verbose` | 打印 HTTP / 健康检查细节 |
-| `--no-color` | 关闭 Rich 彩色输出 |
-| `-o`, `--output` | 部分子命令支持，见下文 |
-
----
-
-## 命令参考
-
-### `allox sandbox` — 生命周期（OpenSandbox）
-
-| 子命令 | 作用 |
-|--------|------|
-| `create` | 创建 AIO 沙箱并等待健康检查（自动写入 session） |
-| `list` | 列出沙箱（Rich 表格） |
-| `get [<id>]` | 查看单个沙箱 |
-| `endpoint [<id>]` | 打印 AIO 门户 URL |
-| `renew [<id>]` | 续期沙箱 |
-| `kill [<id>]` | 销毁沙箱 |
-
-`[<id>]` 可省略，默认使用当前 session。
-
-#### `sandbox create`
+也可以为当前 session 运行前台定时保存：
 
 ```bash
-allox sandbox create [选项]
+allox checkpoint watch --interval 5m
 ```
 
-| 选项 | 说明 |
-|------|------|
-| `-i`, `--image` | 镜像（默认见 config `defaults.image`） |
-| `-t`, `--timeout` | 存活时间，如 `30m`、`1h`；`none` 表示需手动 `kill` |
-| `-m`, `--metadata` | 元数据，可重复：`--metadata key=value` |
-| `-e`, `--env` | 环境变量，可重复：`--env KEY=VALUE` |
-| `--entrypoint` | 覆盖入口，可多次传入参数；默认 `/opt/gem/run.sh` |
-| `--skip-health-check` | 不等待 AIO `/v1` 就绪 |
-| `--ready-timeout` | 健康检查最长等待，如 `60s`（覆盖 config `defaults.ready_timeout`） |
-| `-o json` | 输出 JSON：`id`、`image`、`aio_url`、`aio_ready_seconds`、`entrypoint` |
+`strict = false` 表示自动保存失败只产生警告，不改变原操作的成功结果。`watch` 会持续运行，按 `Ctrl+C` 停止。
 
-示例：
+### 4. MCP Discovery and Call
+
+MCP Server 和工具随运行镜像而变化，调用前应先发现实际能力：
 
 ```bash
-allox sandbox create -o json
-allox sandbox create -e DEBUG=1 -m tool=allox --timeout 10m
-allox sandbox create --timeout none -o json
-allox sandbox renew --timeout 30m -o json
-```
+# 创建环境（如当前已有 session，可省略）
+allox sandbox create --timeout 30m -o json
 
----
-
-### `allox session` — 本地会话
-
-| 子命令 | 作用 |
-|--------|------|
-| `current` | 显示当前 session（`~/.allox/sessions.json`） |
-| `use <id>` | 切换当前 session |
-| `clear` | 清除当前 session |
-
----
-
-### `allox aio` — Agent 能力（agent-sandbox `/v1`）
-
-`<sandbox-id>` 可省略（使用当前 session）。
-
-| 子命令 | 作用 |
-|--------|------|
-| `exec` | 在沙箱内执行 shell 命令 |
-| `read` | 读取沙箱内文件 |
-| `screenshot` | 浏览器截图保存到本地 |
-| `jupyter run` | 经 Jupyter 内核执行 Python |
-| `browser info` | 输出 CDP / VNC URL（供 Playwright 等） |
-
-#### `aio exec`
-
-```bash
-allox aio exec [选项] [<sandbox-id>] <命令...>
-```
-
-| 选项 | 说明 |
-|------|------|
-| `-w`, `--workdir` | 工作目录（沙箱内绝对路径） |
-| `--timeout` | 命令最长运行秒数（默认 60）；超时后强制终止命令，CLI 返回 124 |
-
-```bash
-allox aio exec ls -la
-allox aio exec -w /home/gem ls -la
-allox aio exec --timeout 1 sleep 3
-allox aio exec -o json ls
-```
-
-JSON 输出包含 `session_id`、`status`、`output`、`exit_code`、`message` 和 `error`。
-远端命令失败时，Allox 会将远端退出码传给本地 CLI；硬超时时本地退出码为 `124`。
-
-#### `aio read`
-
-```bash
-allox aio read <sandbox-id> <容器内路径> [-o json]
-```
-
-#### `aio screenshot`
-
-```bash
-allox aio screenshot <sandbox-id> [-f 本地路径] [-o json]
-# 默认保存 screenshot.png
-allox aio screenshot <id> -f test.png
-```
-
-#### `aio jupyter run`
-
-```bash
-allox aio jupyter run <sandbox-id> -c '<python 代码>' [选项]
-```
-
-| 选项 | 说明 |
-|------|------|
-| `-c`, `--code` | 必填，要执行的 Python |
-| `--timeout` | 执行超时（秒） |
-| `--session-id` | 复用已有 Jupyter 会话 |
-| `-o json` | 完整执行结果（含 `status`、`outputs`） |
-
-```bash
-allox aio jupyter run <id> -c "print(2+2)" -o json
-```
-
-#### `aio browser info`
-
-```bash
-allox aio browser info <sandbox-id> [-o json]
-```
-
-JSON / 表格中包含 `cdp_url`、`vnc_url`、`cdp_ui_url`、`viewport` 等，便于连接 Playwright。
-
-#### `aio mcp` — 沙箱内 MCP 服务
-
-通过 AIO REST `/v1/mcp/*` 访问沙箱内 MCP server。**调用前先盘点**（server / 工具名因镜像而异）。详见 [docs/MCP_SERVERS.md](docs/MCP_SERVERS.md)。
-
-| 子命令 | 作用 |
-|--------|------|
-| `servers [sandbox-id]` | 列出 MCP server |
-| `tools [sandbox-id] <server>` | 列出某 server 的工具与描述 |
-| `call [sandbox-id] <server> <tool>` | 调用 MCP 工具（**tool 须为 tools 列表中的完整名称**） |
-
-```bash
+# 发现 Server 和完整工具名
 allox aio mcp servers -o json
-allox aio mcp tools browser -o json | jq '.tools[].name'
-allox aio mcp call browser browser_navigate --args '{"url":"https://example.com"}'
-allox aio mcp call browser browser_screenshot -o json
+allox aio mcp tools browser -o json
+
+# 调用浏览器工具；具体工具名以 tools 输出为准
+allox aio mcp call browser browser_navigate \
+  --args '{"url":"https://example.com"}'
+
+allox sandbox kill -o json
 ```
 
-`shell` / `file` 等 server 在部分镜像中未启用（404）；此时用 `allox aio exec` / `aio read`。browser 工具名通常为 `browser_navigate` 而非简写 `navigate`。
+部分镜像没有启用全部 MCP Server，出现 404 不代表环境生命周期异常。Shell 和文件操作可分别回退到 `allox aio exec`、`allox aio read` 或 `allox file *`。
 
-**分工**：日常 shell / 读文件优先 `aio exec` / `aio read`；browser MCP 或 Agent 统一工具面时用 `aio mcp call`。截图到本地仍推荐 `aio screenshot`。
+详见 [MCP Server 使用说明](./docs/MCP_SERVERS.md)。
 
----
+## Command Reference
 
-### `allox config` — 本地配置
+| 命令 | 用途 |
+|---|---|
+| `allox sandbox create/list/get/endpoint/renew/pause/resume/kill` | 环境生命周期 |
+| `allox session current/use/clear` | 当前工作环境 |
+| `allox aio exec/read/screenshot` | Shell、文件读取与截图 |
+| `allox aio jupyter run` | Jupyter 代码执行 |
+| `allox aio browser info` | 获取 CDP/VNC 信息 |
+| `allox aio mcp servers/tools/call` | MCP 发现与调用 |
+| `allox checkpoint create/list/restore/delete/watch` | 工作区保存与恢复 |
+| `allox run` | 通用命令执行 |
+| `allox file cat/write/upload/download` | 文件操作与传输 |
+| `allox config init/show/set/path` | 本地配置 |
 
-| 子命令 | 作用 |
-|--------|------|
-| `init` | 创建 `~/.allox/config.toml` 模板 |
-| `show` | 显示合并后的有效配置（`-o json`） |
-| `set <key> <value>` | 设置项，如 `connection.domain localhost:8080` |
-| `path` | 打印配置文件路径 |
+使用 `allox <command> --help` 查看完整参数。
+
+## Tests: Validation and Quality
+
+### Unit Tests
+
+无需 Docker 或正在运行的服务端：
 
 ```bash
-allox config init --force   # 覆盖已有文件
-allox config set defaults.image ghcr.io/agent-infra/sandbox:<tag>
+uv run pytest -m "not integration" -q
+uv run ruff check src tests
 ```
 
----
+### End-to-End
 
-## 输出格式
-
-| 格式 | 说明 |
-|------|------|
-| `table` | Rich 表格 / 面板（默认，适合人工阅读） |
-| `json` | JSON（脚本化首选） |
-| `yaml` | YAML（需 PyYAML，与 osb 对齐） |
-| `raw` | 纯文本（exec/read 默认） |
-
-| 命令类型 | 典型 `-o` 值 |
-|----------|----------------|
-| `sandbox create` / `list` / `get` / `endpoint` / `renew` / `kill` | `table`（默认）、`json`、`yaml` |
-| `aio exec` / `aio read` | `raw`（默认）、`json` |
-| `aio screenshot` / `browser info` / `aio mcp servers|tools` / `session` | `table`、`json`、`yaml` |
-| `aio mcp call` | `raw`（默认）、`json` |
-| `config show` | `table`、`json` |
-| `run` / `file cat` | `raw`（默认）、`json` |
-
-### 与 osb 输出格式对照
-
-| 场景 | allox | osb |
-|------|-------|-----|
-| 沙箱列表 | `-o table\|json\|yaml` | 同 |
-| 创建结果 | `-o table\|json\|yaml` | 同 |
-| 命令执行（execd） | `allox run` → `-o raw\|json` | `osb command run` → `-o raw` |
-| AIO shell | `allox aio exec` → `-o raw\|json` | N/A（osb 无 AIO 面） |
-
-脚本化推荐：创建与销毁统一使用 `-o json`，用 `jq` 解析字段。
-
----
-
-## execd 运维命令（可选）
-
-Agent 业务优先 **`allox aio *`**（容器内 `/v1`）；容器运维、与 osb 对齐时可选 execd 路径：
-
-| 命令 | API | 说明 |
-|------|-----|------|
-| `allox run [<id>] -- <cmd>` | `sandbox.commands.run` | execd 执行命令（非 AIO shell） |
-| `allox file cat [<id>] <path>` | `sandbox.files.read_file` | execd 读文件 |
-| `allox file write [<id>] <path>` | `sandbox.files.write_file` | execd 写文件 |
+准备完整运行环境后执行：
 
 ```bash
-allox run -- ls -la
-allox file cat /etc/hostname
-echo "hello" | allox file write /tmp/hello.txt
-```
-
----
-
-## 测试
-
-```bash
-# 冒烟 + 单元（无需 Docker）
-uv run pytest -q
-
-# 集成（需 Server + Docker）
 uv run pytest -m integration tests/test_integration_e2e.py -v
+```
 
-# 自定义镜像集成（需先 docker/build.sh）
+覆盖流程：
+
+```text
+create → exec → screenshot → Jupyter → browser info
+       → file upload/download → recursive transfer → kill
+```
+
+其他集成测试：
+
+```bash
+# MCP
+uv run pytest -m integration tests/test_integration_mcp.py -v
+
+# 自定义 Runtime image；先执行 docker/build.sh
 uv run pytest -m integration tests/test_integration_custom_image.py -v
 ```
 
-详见 [docs/PHASE1_TESTING.md](./docs/PHASE1_TESTING.md)、[docs/PHASE2_TESTING.md](./docs/PHASE2_TESTING.md) 与 [docs/PHASE3_TESTING.md](./docs/PHASE3_TESTING.md)（含 pytest 输出、CLI 实跑摘录与手工勾选清单）。
+## Documentation
 
----
+[MCP Server 使用说明](./docs/MCP_SERVERS.md)介绍 MCP Server 发现、工具列表与调用流程。
 
-## 与 `osb` 的分工
+[自定义镜像指南](./docs/CUSTOM_IMAGE.md)说明如何构建和验证自定义 Runtime image；[Code Interpreter 指南](./docs/CODE_INTERPRETER.md)介绍轻量 Code Interpreter 镜像的配置与使用方式。
 
-| 场景 | 建议工具 |
-|------|----------|
-| 日常 Agent 流程、AIO 默认镜像 | **allox** |
-| 对齐 OpenSandbox 官方 CLI、深度排障 | **osb**（`pip install opensandbox-cli`） |
+测试与验收记录按阶段整理：[Phase 1](./docs/PHASE1_TESTING.md)覆盖基础生命周期与工具能力，[Phase 2](./docs/PHASE2_TESTING.md)覆盖 Session、Profile、MCP 与脚本化能力，[Phase 3](./docs/PHASE3_TESTING.md)覆盖自定义镜像。
 
-Agent 业务优先使用 `allox aio *`（容器内 `/v1`）；容器运维可选用 `allox run` / `allox file *`（execd）或 `osb`，**勿在同一操作混用两套 API**。
+## Built With
 
----
+- [Python 3.10+](https://www.python.org/) — 主要开发语言。
+- [Click](https://click.palletsprojects.com/) — CLI 命令、参数解析与上下文管理。
+- [Rich](https://github.com/Textualize/rich) — 终端表格、状态面板和交互输出。
+- [HTTPX](https://www.python-httpx.org/) — Runtime 健康检查与 HTTP 通信。
+- [OpenSandbox](https://github.com/opensandbox-group/OpenSandbox) — 环境生命周期、endpoint、execd、snapshot 与隔离能力。
+- [AIO Sandbox](https://github.com/agent-infra/sandbox) — Shell、File、Browser、Jupyter、MCP 与 VSCode Agent Runtime。
+- [Docker](https://www.docker.com/) — 本地容器运行环境。
+- [uv](https://github.com/astral-sh/uv) 与 [Hatchling](https://hatch.pypa.io/latest/) — 依赖管理、虚拟环境和 Python 包构建。
+- [pytest](https://docs.pytest.org/) 与 [Ruff](https://docs.astral.sh/ruff/) — 自动化测试、Lint 和代码质量检查。
 
-## 许可证
+## License
 
-Apache-2.0
+Apache-2.0。完整许可证文本见 [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0)。

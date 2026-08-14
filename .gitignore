@@ -9,14 +9,5 @@ dist/
 htmlcov/
 *.png
 !docs/**/*.png
-.venv*/
-.DS_Store
-.env
-.env.*
-!.env.example
-.allox/
-*.pem
-*.key
-
-# 保留文档所引用的测试截图
-!assert/**/*.png
+!assets/allox-logo.png
+OpenSandbox/
