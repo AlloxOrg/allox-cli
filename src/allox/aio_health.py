@@ -29,7 +29,9 @@ def make_aio_health_check(
             endpoint = sbx.get_endpoint(port)
             url = f"http://{endpoint.endpoint}{path}"
             if verbose:
-                click.echo(f"[verbose] AIO health check: GET {url} (timeout {max_wait_seconds}s)", err=True)
+                click.echo(
+                    f"[verbose] AIO health check: GET {url} (timeout {max_wait_seconds}s)", err=True
+                )
             while time.perf_counter() - start < max_wait_seconds:
                 try:
                     resp = httpx.get(url, timeout=1.0)

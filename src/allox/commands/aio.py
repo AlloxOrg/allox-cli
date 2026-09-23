@@ -109,7 +109,9 @@ def aio_exec(
 @output_option("raw", "json")
 @click.pass_obj
 @handle_errors
-def aio_read(obj: ClientContext, sandbox_id: str | None, path: str, output_format: str | None) -> None:
+def aio_read(
+    obj: ClientContext, sandbox_id: str | None, path: str, output_format: str | None
+) -> None:
     """Read a file from the AIO sandbox."""
     prepare_output(obj, output_format, allowed=("raw", "json"), fallback="raw")
     resolved = obj.resolve_sandbox_id(sandbox_id)
@@ -130,7 +132,9 @@ def aio_read(obj: ClientContext, sandbox_id: str | None, path: str, output_forma
 
 @aio_group.command("screenshot")
 @click.argument("sandbox_id", required=False, default=None)
-@click.option("-f", "--file", "out_path", type=click.Path(), default="screenshot.png", help="Local PNG path.")
+@click.option(
+    "-f", "--file", "out_path", type=click.Path(), default="screenshot.png", help="Local PNG path."
+)
 @output_option("table", "json", "yaml")
 @click.pass_obj
 @handle_errors

@@ -44,9 +44,7 @@ def test_file_upload_streams_binary_file(runner, tmp_path):
 def test_file_upload_rejects_missing_local_file_before_connect(runner, tmp_path):
     connect = MagicMock()
     with patch("allox.context.ClientContext.connect_sandbox", connect):
-        result = runner(
-            ["file", "upload", "sbx-upload", str(tmp_path / "missing"), "/tmp/file"]
-        )
+        result = runner(["file", "upload", "sbx-upload", str(tmp_path / "missing"), "/tmp/file"])
 
     assert result.exit_code != 0
     assert "Local file not found" in result.output
@@ -66,9 +64,7 @@ def test_file_download_streams_to_local_file(runner, tmp_path):
     assert result.exit_code == 0, result.output
     assert target.read_bytes() == b"\x00allox\xff"
     assert json.loads(result.output)["bytes"] == 7
-    sandbox.files.read_bytes_stream.assert_called_once_with(
-        "/tmp/source.bin", chunk_size=64 * 1024
-    )
+    sandbox.files.read_bytes_stream.assert_called_once_with("/tmp/source.bin", chunk_size=64 * 1024)
     sandbox.close.assert_called_once()
 
 
@@ -77,9 +73,7 @@ def test_file_download_refuses_overwrite_without_force(runner, tmp_path):
     target.write_bytes(b"keep")
     connect = MagicMock()
     with patch("allox.context.ClientContext.connect_sandbox", connect):
-        result = runner(
-            ["file", "download", "sbx-download", "/tmp/source.bin", str(target)]
-        )
+        result = runner(["file", "download", "sbx-download", "/tmp/source.bin", str(target)])
 
     assert result.exit_code != 0
     assert "Use --force" in result.output
@@ -96,9 +90,7 @@ def test_file_download_force_overwrites_and_uses_session(runner, tmp_path, monke
     monkeypatch.setattr("allox.context.get_current_session", lambda: session)
 
     with patch("allox.context.ClientContext.connect_sandbox", return_value=sandbox) as connect:
-        result = runner(
-            ["file", "download", "--force", "/tmp/source.bin", str(target)]
-        )
+        result = runner(["file", "download", "--force", "/tmp/source.bin", str(target)])
 
     assert result.exit_code == 0, result.output
     assert target.read_bytes() == b"new"
@@ -115,9 +107,7 @@ def test_file_download_failure_removes_partial_file(runner, tmp_path):
 
     sandbox.files.read_bytes_stream.side_effect = failing_stream
     with patch("allox.context.ClientContext.connect_sandbox", return_value=sandbox):
-        result = runner(
-            ["file", "download", "sbx-download", "/tmp/source.bin", str(target)]
-        )
+        result = runner(["file", "download", "sbx-download", "/tmp/source.bin", str(target)])
 
     assert result.exit_code != 0
     assert not target.exists()
@@ -247,9 +237,7 @@ def test_recursive_download_preserves_tree_and_empty_directories(runner, tmp_pat
         "/workspace/tree/root.bin": [b"root", b"\x00"],
         "/workspace/tree/nested/child.bin": [b"child\xff"],
     }
-    sandbox.files.read_bytes_stream.side_effect = (
-        lambda path, **kwargs: iter(payloads[path])
-    )
+    sandbox.files.read_bytes_stream.side_effect = lambda path, **kwargs: iter(payloads[path])
 
     with patch("allox.context.ClientContext.connect_sandbox", return_value=sandbox):
         result = runner(

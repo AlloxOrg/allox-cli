@@ -116,6 +116,4 @@ def test_windows_browser_no_sandbox_is_not_enabled_for_remote_server(monkeypatch
     monkeypatch.setattr("allox.commands.sandbox.sys.platform", "win32")
     obj = SimpleNamespace(resolved_config={"domain": "sandbox.example.com:8080"})
 
-    assert not _needs_windows_browser_no_sandbox(
-        obj, "ghcr.io/agent-infra/sandbox:latest"
-    )
+    assert not _needs_windows_browser_no_sandbox(obj, "ghcr.io/agent-infra/sandbox:latest")

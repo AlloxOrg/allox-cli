@@ -58,14 +58,23 @@ def _needs_windows_browser_no_sandbox(obj: ClientContext, image: str) -> bool:
 @click.option("--image", "-i", default=None, help="Container image (default: AIO sandbox).")
 @click.option("--timeout", "-t", "timeout_raw", default=None, help="Lifetime e.g. 30m, or none.")
 @click.option("--metadata", "-m", "metadata_kv", multiple=True, type=KEY_VALUE)
-@click.option("--env", "-e", "env_kv", multiple=True, type=KEY_VALUE, help="Environment KEY=VALUE (repeatable).")
+@click.option(
+    "--env",
+    "-e",
+    "env_kv",
+    multiple=True,
+    type=KEY_VALUE,
+    help="Environment KEY=VALUE (repeatable).",
+)
 @click.option(
     "--entrypoint",
     multiple=True,
     help="Override entrypoint (default: /opt/gem/run.sh for AIO).",
 )
 @click.option("--skip-health-check", is_flag=True, help="Do not wait for AIO /v1 API.")
-@click.option("--ready-timeout", default=None, help="Max wait for readiness (e.g. 60s). Overrides config.")
+@click.option(
+    "--ready-timeout", default=None, help="Max wait for readiness (e.g. 60s). Overrides config."
+)
 @output_option("table", "json", "yaml")
 @click.pass_obj
 @handle_errors
@@ -103,7 +112,11 @@ def sandbox_create(
             timeout = parse_nullable_duration(default_timeout)
             timeout_is_set = True
 
-    ep = list(entrypoint) if entrypoint else obj.resolved_config.get("default_entrypoint", ["/opt/gem/run.sh"])
+    ep = (
+        list(entrypoint)
+        if entrypoint
+        else obj.resolved_config.get("default_entrypoint", ["/opt/gem/run.sh"])
+    )
 
     metadata = {"tool": "allox", "version": __version__}
     metadata.update(dict(metadata_kv))

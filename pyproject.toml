@@ -53,6 +53,7 @@ dev = [
 [tool.ruff]
 target-version = "py310"
 line-length = 100
+exclude = ["OpenSandbox/**/*.py"]
 
 [tool.pyright]
 pythonVersion = "3.10"

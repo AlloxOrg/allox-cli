@@ -17,11 +17,15 @@ pytestmark = pytest.mark.integration
 
 @pytest.fixture(scope="module")
 def require_server(require_opensandbox_server):
-    if shutil.which("docker") and subprocess.run(
-        ["docker", "info"],
-        capture_output=True,
-        timeout=10,
-    ).returncode != 0:
+    if (
+        shutil.which("docker")
+        and subprocess.run(
+            ["docker", "info"],
+            capture_output=True,
+            timeout=10,
+        ).returncode
+        != 0
+    ):
         pytest.skip("Docker daemon not running")
 
 
@@ -51,9 +55,7 @@ def test_e2e_sandbox_lifecycle(runner, sandbox_id, tmp_path):
     assert shot.exit_code == 0, shot.output
     assert out_png.exists() and out_png.stat().st_size > 0
 
-    jupyter = runner(
-        ["aio", "jupyter", "run", sandbox_id, "-c", "print(2+2)", "-o", "json"]
-    )
+    jupyter = runner(["aio", "jupyter", "run", sandbox_id, "-c", "print(2+2)", "-o", "json"])
     assert jupyter.exit_code == 0, jupyter.output
     jdata = json.loads(jupyter.output)
     assert jdata.get("status") == "ok"

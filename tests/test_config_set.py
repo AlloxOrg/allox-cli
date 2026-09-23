@@ -7,8 +7,7 @@ from allox.config import load_config_file
 
 def test_config_set_preserves_and_quotes_string_values(runner):
     runner.config_path.write_text(
-        '[connection]\ndomain = "localhost:8080"\nprotocol = "http"\n\n'
-        '[log]\nlevel = "DEBUG"\n',
+        '[connection]\ndomain = "localhost:8080"\nprotocol = "http"\n\n[log]\nlevel = "DEBUG"\n',
         encoding="utf-8",
     )
     result = runner(["config", "set", "defaults.ready_timeout", "180s"])

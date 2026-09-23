@@ -92,7 +92,9 @@ def resolve_config(
     out = file_cfg.get("output", {})
     defaults = file_cfg.get("defaults", {})
 
-    api_key = cli_api_key or _env("ALLOX_API_KEY") or _env("OPEN_SANDBOX_API_KEY") or conn.get("api_key")
+    api_key = (
+        cli_api_key or _env("ALLOX_API_KEY") or _env("OPEN_SANDBOX_API_KEY") or conn.get("api_key")
+    )
     domain = cli_domain or _env("ALLOX_DOMAIN") or _env("OPEN_SANDBOX_DOMAIN") or conn.get("domain")
     protocol = cli_protocol or _env("ALLOX_PROTOCOL") or conn.get("protocol") or "http"
     request_timeout = cli_timeout
@@ -131,9 +133,11 @@ def resolve_config(
         "skip_health_check": skip_health_check,
         "checkpoint_enabled": bool(checkpoint.get("enabled", False)),
         "checkpoint_on_success": bool(checkpoint.get("on_success", False)),
-        "checkpoint_operations": list(checkpoint.get(
-            "operations", ["run", "file.write", "file.upload", "aio.exec", "aio.jupyter"]
-        )),
+        "checkpoint_operations": list(
+            checkpoint.get(
+                "operations", ["run", "file.write", "file.upload", "aio.exec", "aio.jupyter"]
+            )
+        ),
         "checkpoint_interval": checkpoint.get("interval", "5m"),
         "checkpoint_strict": bool(checkpoint.get("strict", False)),
         "checkpoint_create_timeout": int(checkpoint.get("create_timeout", 900)),

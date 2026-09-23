@@ -20,11 +20,15 @@ _BROWSER_CALL_TOOLS = ("browser_screenshot", "browser_navigate")
 
 @pytest.fixture(scope="module")
 def require_server(require_opensandbox_server):
-    if shutil.which("docker") and subprocess.run(
-        ["docker", "info"],
-        capture_output=True,
-        timeout=10,
-    ).returncode != 0:
+    if (
+        shutil.which("docker")
+        and subprocess.run(
+            ["docker", "info"],
+            capture_output=True,
+            timeout=10,
+        ).returncode
+        != 0
+    ):
         pytest.skip("Docker daemon not running")
 
 

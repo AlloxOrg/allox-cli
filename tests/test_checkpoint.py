@@ -13,7 +13,9 @@ from allox.context import ClientContext
 
 def _snapshot(snapshot_id: str, sandbox_id: str, state: str, minute: int = 0):
     return SimpleNamespace(
-        id=snapshot_id, sandbox_id=sandbox_id, name=snapshot_id,
+        id=snapshot_id,
+        sandbox_id=sandbox_id,
+        name=snapshot_id,
         status=SimpleNamespace(state=state, reason=None, message=None),
         created_at=datetime(2026, 1, 1, 0, minute, tzinfo=timezone.utc),
     )
@@ -40,10 +42,12 @@ def test_checkpoint_create_uses_current_sandbox(runner):
 def test_latest_ready_ignores_newer_failed_snapshot(tmp_path):
     obj = ClientContext({"color": False}, tmp_path / "config.toml")
     manager = MagicMock()
-    manager.list_snapshots.return_value = _page([
-        _snapshot("snap-ready", "sbx-1", "ready", 1),
-        _snapshot("snap-failed", "sbx-1", "failed", 2),
-    ])
+    manager.list_snapshots.return_value = _page(
+        [
+            _snapshot("snap-ready", "sbx-1", "ready", 1),
+            _snapshot("snap-failed", "sbx-1", "failed", 2),
+        ]
+    )
     obj._manager = manager
     assert latest_ready_snapshot(obj, "sbx-1").id == "snap-ready"
 
@@ -68,10 +72,16 @@ def test_restore_specific_checkpoint_updates_current_session(runner):
 
 
 def test_auto_checkpoint_only_for_configured_operation(tmp_path):
-    obj = ClientContext({
-        "color": False, "checkpoint_enabled": True, "checkpoint_on_success": True,
-        "checkpoint_operations": ["run"], "checkpoint_strict": False,
-    }, tmp_path / "config.toml")
+    obj = ClientContext(
+        {
+            "color": False,
+            "checkpoint_enabled": True,
+            "checkpoint_on_success": True,
+            "checkpoint_operations": ["run"],
+            "checkpoint_strict": False,
+        },
+        tmp_path / "config.toml",
+    )
     manager = MagicMock()
     manager.create_snapshot.return_value = _snapshot("snap-auto", "sbx-1", "ready")
     obj._manager = manager

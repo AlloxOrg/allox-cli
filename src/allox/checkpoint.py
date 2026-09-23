@@ -25,7 +25,9 @@ def snapshot_to_dict(snapshot: SnapshotInfo) -> dict[str, Any]:
         "state": getattr(status, "state", None),
         "reason": getattr(status, "reason", None),
         "message": getattr(status, "message", None),
-        "created_at": created_at.isoformat() if created_at is not None and hasattr(created_at, "isoformat") else created_at,
+        "created_at": created_at.isoformat()
+        if created_at is not None and hasattr(created_at, "isoformat")
+        else created_at,
     }
 
 

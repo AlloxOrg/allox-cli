@@ -36,24 +36,23 @@ def _image_available(image: str) -> bool:
 
 @pytest.fixture(scope="module")
 def require_custom_image(require_opensandbox_server):
-    if shutil.which("docker") and subprocess.run(
-        ["docker", "info"],
-        capture_output=True,
-        timeout=10,
-    ).returncode != 0:
+    if (
+        shutil.which("docker")
+        and subprocess.run(
+            ["docker", "info"],
+            capture_output=True,
+            timeout=10,
+        ).returncode
+        != 0
+    ):
         pytest.skip("Docker daemon not running")
     if not _image_available(CUSTOM_IMAGE):
-        pytest.skip(
-            f"Custom image {CUSTOM_IMAGE} not found. "
-            "Build with: cd docker && ./build.sh"
-        )
+        pytest.skip(f"Custom image {CUSTOM_IMAGE} not found. Build with: cd docker && ./build.sh")
 
 
 def test_custom_image_create_and_health(runner, require_custom_image):
     """Create sandbox with custom image; AIO health_check passes."""
-    create = runner(
-        ["sandbox", "create", "-o", "json", "--timeout", "5m", "--image", CUSTOM_IMAGE]
-    )
+    create = runner(["sandbox", "create", "-o", "json", "--timeout", "5m", "--image", CUSTOM_IMAGE])
     assert create.exit_code == 0, create.output
     data = json.loads(create.output)
     sandbox_id = data["id"]

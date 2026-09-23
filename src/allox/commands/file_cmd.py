@@ -269,9 +269,7 @@ def file_upload(
             for relative in relative_files:
                 source_path = local_path / relative
                 with source_path.open("rb") as source:
-                    sandbox.files.write_file(
-                        _remote_join(remote_path, relative), source, mode=mode
-                    )
+                    sandbox.files.write_file(_remote_join(remote_path, relative), source, mode=mode)
                 total += source_path.stat().st_size
             file_count = len(relative_files)
             directory_count = len(directories)
@@ -400,9 +398,7 @@ def file_download(
                 delete=False,
             ) as destination:
                 temp_path = Path(destination.name)
-                for chunk in sandbox.files.read_bytes_stream(
-                    remote_path, chunk_size=chunk_size
-                ):
+                for chunk in sandbox.files.read_bytes_stream(remote_path, chunk_size=chunk_size):
                     destination.write(chunk)
                     total += len(chunk)
             os.replace(temp_path, local_path)
