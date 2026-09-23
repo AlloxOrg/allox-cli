@@ -4,15 +4,18 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 import time
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
 import click
 from opensandbox.models.sandboxes import SnapshotFilter
 
 from allox.context import ClientContext
 
+if TYPE_CHECKING:
+    from opensandbox.models.sandboxes import SnapshotInfo
 
-def snapshot_to_dict(snapshot: Any) -> dict[str, Any]:
+
+def snapshot_to_dict(snapshot: SnapshotInfo) -> dict[str, Any]:
     status = getattr(snapshot, "status", None)
     created_at = getattr(snapshot, "created_at", None)
     return {
@@ -22,14 +25,14 @@ def snapshot_to_dict(snapshot: Any) -> dict[str, Any]:
         "state": getattr(status, "state", None),
         "reason": getattr(status, "reason", None),
         "message": getattr(status, "message", None),
-        "created_at": created_at.isoformat() if hasattr(created_at, "isoformat") else created_at,
+        "created_at": created_at.isoformat() if created_at is not None and hasattr(created_at, "isoformat") else created_at,
     }
 
 
-def list_snapshots(obj: ClientContext, sandbox_id: str | None = None) -> list[Any]:
+def list_snapshots(obj: ClientContext, sandbox_id: str | None = None) -> list[SnapshotInfo]:
     manager = obj.get_manager()
     page = 1
-    snapshots: list[Any] = []
+    snapshots: list[SnapshotInfo] = []
     while True:
         result = manager.list_snapshots(SnapshotFilter(sandbox_id=sandbox_id, page=page))
         snapshots.extend(result.snapshot_infos)
@@ -39,7 +42,7 @@ def list_snapshots(obj: ClientContext, sandbox_id: str | None = None) -> list[An
     return snapshots
 
 
-def latest_ready_snapshot(obj: ClientContext, sandbox_id: str | None = None) -> Any:
+def latest_ready_snapshot(obj: ClientContext, sandbox_id: str | None = None) -> SnapshotInfo:
     ready = [
         snapshot
         for snapshot in list_snapshots(obj, sandbox_id)

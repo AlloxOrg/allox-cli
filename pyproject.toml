@@ -44,13 +44,20 @@ opensandbox = { path = "OpenSandbox/sdks/sandbox/python", editable = false }
 
 [dependency-groups]
 dev = [
+    "pyright>=1.1.414",
     "pytest>=8.0.0",
     "ruff>=0.14.0",
+    "types-pyyaml>=6.0.12.20260906",
 ]
 
 [tool.ruff]
 target-version = "py310"
 line-length = 100
+
+[tool.pyright]
+pythonVersion = "3.10"
+typeCheckingMode = "standard"
+include = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
