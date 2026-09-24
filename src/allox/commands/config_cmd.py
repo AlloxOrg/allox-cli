@@ -35,7 +35,9 @@ def config_init(obj: ClientContext, force: bool) -> None:
 
 
 @config_group.command("show")
-@click.option("-o", "--output", "output_format", type=click.Choice(["json", "table"]), default="table")
+@click.option(
+    "-o", "--output", "output_format", type=click.Choice(["json", "table"]), default="table"
+)
 @click.pass_obj
 @handle_errors
 def config_show(obj: ClientContext, output_format: str) -> None:

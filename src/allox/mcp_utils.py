@@ -99,7 +99,9 @@ def format_mcp_call_raw(result: Any) -> str:
         if text:
             parts.append(text)
         elif getattr(item, "type", None) == "image":
-            parts.append(f"[image {getattr(item, 'mime_type', 'image')}, {len(getattr(item, 'data', '') or '')} bytes]")
+            parts.append(
+                f"[image {getattr(item, 'mime_type', 'image')}, {len(getattr(item, 'data', '') or '')} bytes]"
+            )
         else:
             parts.append(json.dumps(model_to_dict(item), ensure_ascii=False))
 

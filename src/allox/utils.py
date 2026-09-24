@@ -19,9 +19,7 @@ _SANDBOX_ID_RE = re.compile(
 
 OUTPUT_FORMATS = ("table", "json", "raw", "yaml")
 
-_DURATION_RE = re.compile(
-    r"^(?:(?P<hours>\d+)h)?(?:(?P<minutes>\d+)m)?(?:(?P<seconds>\d+)s)?$"
-)
+_DURATION_RE = re.compile(r"^(?:(?P<hours>\d+)h)?(?:(?P<minutes>\d+)m)?(?:(?P<seconds>\d+)s)?$")
 
 
 def parse_duration(value: str) -> timedelta:

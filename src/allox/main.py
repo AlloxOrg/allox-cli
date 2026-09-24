@@ -52,7 +52,9 @@ class BannerGroup(click.Group):
     default=None,
     help="Use ~/.allox/<profile>.toml (overridden by --config).",
 )
-@click.option("-v", "--verbose", is_flag=True, default=False, help="Verbose HTTP / health-check logging.")
+@click.option(
+    "-v", "--verbose", is_flag=True, default=False, help="Verbose HTTP / health-check logging."
+)
 @click.option("--no-color", is_flag=True, default=False)
 @click.version_option(version=__version__, prog_name="allox")
 @click.pass_context

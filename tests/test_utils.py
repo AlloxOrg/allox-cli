@@ -28,7 +28,10 @@ def test_format_api_error_mcp_server_not_found():
 def test_format_api_error_mcp_tool_failed():
     exc = ApiError(
         status_code=500,
-        body={"success": False, "message": "Failed to execute tool 'navigate' on MCP server 'browser'"},
+        body={
+            "success": False,
+            "message": "Failed to execute tool 'navigate' on MCP server 'browser'",
+        },
     )
     text = format_api_error(exc)
     assert "browser_navigate" in text or "mcp tools" in text

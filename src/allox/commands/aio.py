@@ -85,15 +85,20 @@ def aio_exec(
     if workdir:
         kwargs["exec_dir"] = workdir
     result = client.shell.exec_command(**kwargs)
-    exit_code = getattr(result.data, "exit_code", None)
+
+    shell_result = result.data
+    if shell_result is None:
+        raise click.ClickException(result.message or "Shell execution returned no data")
+
+    exit_code = getattr(shell_result, "exit_code", None)
     if obj.output.fmt == "json":
         import json
 
-        click.echo(json.dumps({"output": result.data.output, "exit_code": exit_code}))
+        click.echo(json.dumps({"output": shell_result.output, "exit_code": exit_code}))
         if exit_code in (0, None):
             checkpoint_after_success(obj, resolved, "aio.exec")
         return
-    click.echo(result.data.output, nl=False)
+    click.echo(shell_result.output, nl=False)
     if exit_code in (0, None):
         checkpoint_after_success(obj, resolved, "aio.exec")
 
@@ -104,23 +109,32 @@ def aio_exec(
 @output_option("raw", "json")
 @click.pass_obj
 @handle_errors
-def aio_read(obj: ClientContext, sandbox_id: str | None, path: str, output_format: str | None) -> None:
+def aio_read(
+    obj: ClientContext, sandbox_id: str | None, path: str, output_format: str | None
+) -> None:
     """Read a file from the AIO sandbox."""
     prepare_output(obj, output_format, allowed=("raw", "json"), fallback="raw")
     resolved = obj.resolve_sandbox_id(sandbox_id)
     client = obj.aio_client(resolved)
     content = client.file.read_file(file=path)
+
+    file_result = content.data
+    if file_result is None:
+        raise click.ClickException(content.message or "File read returned no data")
+
     if obj.output.fmt == "json":
         import json
 
-        click.echo(json.dumps({"path": path, "content": content.data.content}))
+        click.echo(json.dumps({"path": path, "content": file_result.content}))
         return
-    click.echo(content.data.content, nl=False)
+    click.echo(file_result.content, nl=False)
 
 
 @aio_group.command("screenshot")
 @click.argument("sandbox_id", required=False, default=None)
-@click.option("-f", "--file", "out_path", type=click.Path(), default="screenshot.png", help="Local PNG path.")
+@click.option(
+    "-f", "--file", "out_path", type=click.Path(), default="screenshot.png", help="Local PNG path."
+)
 @output_option("table", "json", "yaml")
 @click.pass_obj
 @handle_errors
@@ -179,16 +193,21 @@ def aio_jupyter_run(
         kwargs["session_id"] = session_id
     result = client.jupyter.execute_code(**kwargs)
     payload = model_to_dict(result.data)
+
+    jupyter_result = result.data
+    if jupyter_result is None:
+        raise click.ClickException(result.message or "Jupyter execution returned no data")
+
     if obj.output.fmt == "json":
         emit_json(payload)
-        if result.data.status == "ok":
+        if jupyter_result.status == "ok":
             checkpoint_after_success(obj, resolved, "aio.jupyter")
         return
-    text = _format_jupyter_outputs(result.data.outputs)
+    text = _format_jupyter_outputs(jupyter_result.outputs)
     if text:
         click.echo(text, nl=not text.endswith("\n"))
-    if result.data.status != "ok":
-        raise click.ClickException(f"Jupyter execution status: {result.data.status}")
+    if jupyter_result.status != "ok":
+        raise click.ClickException(f"Jupyter execution status: {jupyter_result.status}")
     checkpoint_after_success(obj, resolved, "aio.jupyter")
 
 
@@ -216,6 +235,9 @@ def aio_browser_info(
     client = obj.aio_client(resolved)
     result = client.browser.get_info()
     info = result.data
+    if info is None:
+        raise click.ClickException(result.message or "Browser info returned no data")
+
     data = {
         "sandbox_id": resolved,
         "cdp_url": info.cdp_url,
@@ -322,6 +344,10 @@ def aio_mcp_call(
     resolved = obj.resolve_sandbox_id(sandbox_id)
     client = obj.aio_client(resolved)
     request = build_mcp_request(args_json, arg_pairs)
+
+    if tool is None:
+        raise click.ClickException("Missing MCP tool name")
+
     result = client.mcp.execute_mcp_tool(
         server_name=server,
         tool_name=tool,
