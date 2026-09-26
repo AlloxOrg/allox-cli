@@ -34,7 +34,7 @@ uv run pytest -m integration -v -rs         # 集成，并打印 skip 原因
 ```text
 ============================= test session starts ==============================
 platform darwin -- Python 3.12.13, pytest-9.0.3, pluggy-1.6.0
-rootdir: /Users/kn0wn/Desktop/Agent/allox-cli
+rootdir: <repository-root>
 configfile: pyproject.toml
 collected 8 items / 1 deselected / 7 selected
 
@@ -81,14 +81,14 @@ SKIPPED [1] tests/test_integration_e2e.py:39: OpenSandbox server not reachable a
 ---
 
 ## 3. CLI 实际输出摘录
-`allox config show` 指令查看 allox 指令相关 config 配置
+使用 `allox-cli config show` 查看 allox-cli 指令相关配置
 
-### 3.1 `allox --help`（尾部）
+### 3.1 `allox-cli --help`（尾部）
 
 ```text
   v0.1.0 — OpenSandbox + AIO
 
-Usage: allox [OPTIONS] COMMAND [ARGS]...
+Usage: allox-cli [OPTIONS] COMMAND [ARGS]...
 
   Allox — manage AIO agent sandboxes on OpenSandbox.
 
@@ -121,7 +121,7 @@ Commands:
 ### 3.3 `aio jupyter run --help`
 
 ```text
-Usage: allox aio jupyter run [OPTIONS] SANDBOX_ID
+Usage: allox-cli aio jupyter run [OPTIONS] SANDBOX_ID
 
   Execute Python code via the AIO Jupyter kernel.
 
@@ -159,7 +159,7 @@ Options:
 }
 ```
 
-日常沙箱操作建议用 `allox config set connection.domain localhost:8080` 后，通过 **`sandbox` / `aio` 子命令**（会走 `resolve_config`）验证连接。
+日常沙箱操作建议用 `allox-cli config set connection.domain localhost:8080` 后，通过 **`sandbox` / `aio` 子命令**（会走 `resolve_config`）验证连接。
 
 ### 3.5 `sandbox create -o json`（本机无 Server，exit 1）
 
@@ -188,10 +188,10 @@ docker info
 
 
 
-### 4.1 `allox sandbox create -o json`
+### 4.1 `allox-cli sandbox create -o json`
 
 ```bash
-allox sandbox create -o json --timeout 5m
+allox-cli sandbox create -o json --timeout 5m
 ```
 
 ```json
@@ -203,11 +203,11 @@ allox sandbox create -o json --timeout 5m
 }
 ```
 
-### 4.2 `allox aio exec <id> echo hello`
+### 4.2 `allox-cli aio exec <id> echo hello`
 
 ```bash
 ID=$(jq -r .id /tmp/allox-create.json)
-allox aio exec "$ID" echo hello
+allox-cli aio exec "$ID" echo hello
 ```
 
 **实测结果**（2026-06-03，sandbox `ff2b5693-…` / 后续复跑同流程）：
@@ -217,12 +217,12 @@ allox aio exec "$ID" echo hello
 
 终端实录见 `assert/echo.png`：
 
-![allox aio exec echo hello 终端输出](../assert/echo.png)
+![allox-cli aio exec echo hello 终端输出](../assert/echo.png)
 
 JSON 模式：
 
 ```bash
-allox aio exec "$ID" echo hello -o json
+allox-cli aio exec "$ID" echo hello -o json
 ```
 
 ```json
@@ -232,10 +232,10 @@ allox aio exec "$ID" echo hello -o json
 }
 ```
 
-### 4.3 `allox aio screenshot <id> -f /tmp/test.png`
+### 4.3 `allox-cli aio screenshot <id> -f /tmp/test.png`
 
 ```bash
-allox aio screenshot "$ID" -f /tmp/test.png
+allox-cli aio screenshot "$ID" -f /tmp/test.png
 ```
 
 **实测结果**（2026-06-03，sandbox `0a881296-1d33-4545-8fdd-d722ba2e279f`）：
@@ -246,11 +246,11 @@ allox aio screenshot "$ID" -f /tmp/test.png
 
 终端实录见 `assert/screenshot.png`：
 
-![allox aio screenshot 成功输出](../assert/screenshot.png)
+![allox-cli aio screenshot 成功输出](../assert/screenshot.png)
 
 > 注意：保存路径用 **`-f` / `--file`**；**`-o`** 仅用于 `-o json` 等输出格式，勿与文件路径混用。
 
-### 4.4 `allox aio jupyter run <id> -c "print(2+2)" -o json`
+### 4.4 `allox-cli aio jupyter run <id> -c "print(2+2)" -o json`
 
 期望 JSON 片段（集成断言 `status == "ok"`）：
 
@@ -278,7 +278,7 @@ allox aio screenshot "$ID" -f /tmp/test.png
 }
 ```
 
-### 4.5 `allox aio browser info <id> -o json`
+### 4.5 `allox-cli aio browser info <id> -o json`
 
 ```json
 {
@@ -294,7 +294,7 @@ allox aio screenshot "$ID" -f /tmp/test.png
 }
 ```
 
-### 4.6 `allox sandbox kill <id> -o json`
+### 4.6 `allox-cli sandbox kill <id> -o json`
 
 ```json
 {
@@ -326,16 +326,16 @@ opensandbox-server
 
 # 终端 2
 cd allox-cli
-allox config set connection.domain localhost:8080
+allox-cli config set connection.domain localhost:8080
 
 # 建议：先手工跑一遍并保存输出
-allox sandbox create -o json --timeout 5m | tee /tmp/allox-create.json
+allox-cli sandbox create -o json --timeout 5m | tee /tmp/allox-create.json
 ID=$(jq -r .id /tmp/allox-create.json)
-allox aio exec "$ID" echo hello
-allox aio screenshot "$ID" -f /tmp/test.png
-allox aio jupyter run "$ID" -c 'print(2+2)' -o json
-allox aio browser info "$ID" -o json
-allox sandbox kill "$ID" -o json
+allox-cli aio exec "$ID" echo hello
+allox-cli aio screenshot "$ID" -f /tmp/test.png
+allox-cli aio jupyter run "$ID" -c 'print(2+2)' -o json
+allox-cli aio browser info "$ID" -o json
+allox-cli sandbox kill "$ID" -o json
 
 # 再跑集成
 uv run pytest -m integration tests/test_integration_e2e.py -v -rs
@@ -343,10 +343,10 @@ uv run pytest -m integration tests/test_integration_e2e.py -v -rs
 
 ROADMAP 1.5 勾选清单（实跑通过后打勾）：
 
-- [ ] `allox sandbox create -o json` → 记录 `id`、`aio_url`
-- [ ] `allox aio exec <id> ls -la` 或 `echo hello`
-- [ ] `allox aio screenshot <id> -f test.png`
-- [ ] `allox sandbox kill <id>`
+- [ ] `allox-cli sandbox create -o json` → 记录 `id`、`aio_url`
+- [ ] `allox-cli aio exec <id> ls -la` 或 `echo hello`
+- [ ] `allox-cli aio screenshot <id> -f test.png`
+- [ ] `allox-cli sandbox kill <id>`
 - [ ] 全程不启动 `osb`
 
 ---

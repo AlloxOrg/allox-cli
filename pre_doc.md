@@ -2,15 +2,15 @@
 
 ## Allox：统一执行控制
 
-Allox 将 Agent 日常操作统一收束到一个 CLI 入口中，以 `allox` 作为产品化控制面，向下连接 `opensandbox-server` 管理沙箱，向内连接 AIO 镜像提供的 `/v1` 能力。它把 shell 执行、文件读写、浏览器截图、Jupyter 代码执行、MCP 工具调用等能力统一在 `allox aio *` 命令下，同时保留 `allox run`、`allox file` 这类基于 OpenSandbox execd 的运维执行路径。通过统一配置优先级、统一输出格式 `table/json/yaml/raw`、统一 session 解析和 profile 管理，Allox 让人和 Agent 都可以用稳定、可脚本化的方式控制沙箱执行，而不需要直接区分底层 OpenSandbox、agent-sandbox 或具体 endpoint 细节。
+Allox 将 Agent 日常操作统一收束到一个 CLI 入口中，以 `allox-cli` 作为产品化控制面，向下连接 `opensandbox-server` 管理沙箱，向内连接 AIO 镜像提供的 `/v1` 能力。它把 shell 执行、文件读写、浏览器截图、Jupyter 代码执行、MCP 工具调用等能力统一在 `allox-cli aio *` 命令下，同时保留 `allox-cli run`、`allox-cli file` 这类基于 OpenSandbox execd 的运维执行路径。通过统一配置优先级、统一输出格式 `table/json/yaml/raw`、统一 session 解析和 profile 管理，Allox 让人和 Agent 都可以用稳定、可脚本化的方式控制沙箱执行，而不需要直接区分底层 OpenSandbox、agent-sandbox 或具体 endpoint 细节。
 
 ## Allox：沙箱生命周期管理
 
-Allox 通过 `allox sandbox` 命令组封装 OpenSandbox 的生命周期能力，覆盖创建、列表、查看、endpoint 查询、续期和销毁等核心流程。创建沙箱时默认使用 AIO 镜像 `codewisdom/aio_sandbox:latest`、入口 `/opt/gem/run.sh`，支持传入环境变量、metadata、TTL 超时或 `--timeout none` 手动清理模式，并在创建后等待 AIO 健康检查 `/v1/shell/sessions` 就绪。成功创建后，Allox 会自动记录当前 session 到 `~/.allox/sessions.json`，后续命令可以省略 sandbox id；销毁当前沙箱时也会自动清理 session，从而形成“创建、使用、续期、销毁”的闭环管理体验。
+Allox 通过 `allox-cli sandbox` 命令组封装 OpenSandbox 的生命周期能力，覆盖创建、列表、查看、endpoint 查询、续期和销毁等核心流程。创建沙箱时默认使用 AIO 镜像 `codewisdom/aio_sandbox:latest`、入口 `/opt/gem/run.sh`，支持传入环境变量、metadata、TTL 超时或 `--timeout none` 手动清理模式，并在创建后等待 AIO 健康检查 `/v1/shell/sessions` 就绪。成功创建后，Allox 会自动记录当前 session 到 `~/.allox/sessions.json`，后续命令可以省略 sandbox id；销毁当前沙箱时也会自动清理 session，从而形成“创建、使用、续期、销毁”的闭环管理体验。
 
 ## Allox：任务执行安全隔离
 
-Allox 的任务执行隔离建立在 OpenSandbox 的容器化沙箱之上：每个 Agent 任务运行在独立 sandbox 中，命令执行、文件访问、浏览器自动化、Jupyter 代码执行都被限制在对应容器环境内，避免直接污染宿主机或其他任务。平台层还支持通过网络策略限制沙箱出站访问，并可在 OpenSandbox server 级别配置安全容器运行时，例如 gVisor、Kata Containers 或 Firecracker 后端，以获得比默认 runc 更强的系统调用或虚拟化隔离。对 Allox 用户来说，这些安全能力以基础设施配置的方式透明生效，CLI 侧仍保持同样的 `allox aio exec`、`allox run` 等执行接口。
+Allox 的任务执行隔离建立在 OpenSandbox 的容器化沙箱之上：每个 Agent 任务运行在独立 sandbox 中，命令执行、文件访问、浏览器自动化、Jupyter 代码执行都被限制在对应容器环境内，避免直接污染宿主机或其他任务。平台层还支持通过网络策略限制沙箱出站访问，并可在 OpenSandbox server 级别配置安全容器运行时，例如 gVisor、Kata Containers 或 Firecracker 后端，以获得比默认 runc 更强的系统调用或虚拟化隔离。对 Allox 用户来说，这些安全能力以基础设施配置的方式透明生效，CLI 侧仍保持同样的 `allox-cli aio exec`、`allox-cli run` 等执行接口。
 
 ## Allox：智能体执行可观测
 

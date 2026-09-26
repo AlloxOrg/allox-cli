@@ -1,6 +1,6 @@
 # Code Interpreter 镜像评估（阶段 3.3）
 
-> **结论**：`opensandbox/code-interpreter` 适合作为**轻量多语言代码沙箱**的第二镜像，与 AIO 并行；**不提供** `/v1` AIO API，应走 **execd**（`allox run` / `allox file`）而非 `allox aio *`。
+> **结论**：`opensandbox/code-interpreter` 适合作为**轻量多语言代码沙箱**的第二镜像，与 AIO 并行；**不提供** `/v1` AIO API，应走 **execd**（`allox-cli run` / `allox-cli file`）而非 `allox-cli aio *`。
 
 ---
 
@@ -24,11 +24,11 @@
 
 ```bash
 cp examples/profiles/code.toml.example ~/.allox/code.toml
-allox --profile code sandbox create -o json --timeout 30m
-allox --profile code run -- python3 --version
-allox --profile code run -- source /opt/opensandbox/code-interpreter-env.sh python 3.12 && python3 --version
-allox --profile code file cat /etc/os-release
-allox --profile code sandbox kill
+allox-cli --profile code sandbox create -o json --timeout 30m
+allox-cli --profile code run -- python3 --version
+allox-cli --profile code run -- source /opt/opensandbox/code-interpreter-env.sh python 3.12 && python3 --version
+allox-cli --profile code file cat /etc/os-release
+allox-cli --profile code sandbox kill
 ```
 
 配置要点：
@@ -41,11 +41,11 @@ skip_health_check = true   # 无 AIO /v1
 # aio_port / aio_health_path 对 code 镜像无效
 ```
 
-### 为何不新增 `allox code` 命令组？
+### 为何不新增 `allox-cli code` 命令组？
 
-- Code Interpreter 无独立 REST 产品面，能力与现有 **`allox run` / `allox file`** 完全重叠。
+- Code Interpreter 无独立 REST 产品面，能力与现有 **`allox-cli run` / `allox-cli file`** 完全重叠。
 - 通过 **`--profile code`** + 不同 `defaults.*` 即可切换镜像，CLI 代码零重复。
-- 若未来 Code Interpreter 暴露专用 HTTP API，再考虑 `allox code` 子命令。
+- 若未来 Code Interpreter 暴露专用 HTTP API，再考虑 `allox-cli code` 子命令。
 
 ## 构建与 CI
 
@@ -67,9 +67,9 @@ Allox 仓库内可提供 CI  job（阶段 4 可选）：在 `docker/build.sh` �
 
 ## 验收标准（若启用 code profile）
 
-- [ ] `allox --profile code sandbox create` 成功（无 AIO health 超时）
-- [ ] `allox --profile code run -- python3 -c "print(1)"` 输出 `1`
-- [ ] `allox aio exec` **应失败或不可用**（预期行为，勿混用 API）
+- [ ] `allox-cli --profile code sandbox create` 成功（无 AIO health 超时）
+- [ ] `allox-cli --profile code run -- python3 -c "print(1)"` 输出 `1`
+- [ ] `allox-cli aio exec` **应失败或不可用**（预期行为，勿混用 API）
 
 ## 相关路径
 

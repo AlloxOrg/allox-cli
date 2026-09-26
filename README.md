@@ -38,9 +38,6 @@ Allox 将隔离环境、Agent 工具、文件传输、当前会话和 Checkpoint
 git clone https://github.com/AlloxOrg/allox-cli.git
 cd allox-cli
 
-# 当前项目从本地路径加载 OpenSandbox Python SDK
-git clone --depth 1 https://github.com/opensandbox-group/OpenSandbox.git OpenSandbox
-
 uv sync --no-editable
 ```
 
@@ -57,17 +54,17 @@ source .venv/bin/activate
 验证安装：
 
 ```bash
-allox --version
-allox --help
+allox-cli --version
+allox-cli --help
 ```
 
-不激活虚拟环境时，可使用 `uv run --no-editable allox ...`。开发中修改 `src/allox` 后，执行：
+不激活虚拟环境时，可使用 `uv run --no-editable allox-cli ...`。开发中修改 `src/allox_cli` 后，执行：
 
 ```bash
 uv sync --reinstall-package allox-cli
 ```
 
-> 不建议直接执行 `uv run allox`：它可能将项目切换为 editable 安装，覆盖当前安装方式。
+> 不建议直接执行 `uv run allox-cli`：它可能将项目切换为 editable 安装，覆盖当前安装方式。
 
 ### Configure
 
@@ -105,16 +102,16 @@ docker pull ghcr.io/agent-infra/sandbox:latest
 #### Initialize Allox
 
 ```bash
-allox config init
-allox config set connection.domain localhost:8080
-allox config set connection.protocol http
-allox config show
+allox-cli config init
+allox-cli config set connection.domain localhost:8080
+allox-cli config set connection.protocol http
+allox-cli config show
 ```
 
 如果服务端开启了鉴权：
 
 ```bash
-allox config set connection.api_key YOUR_API_KEY
+allox-cli config set connection.api_key YOUR_API_KEY
 ```
 
 Allox 会依次读取命令行选项、环境变量、本地配置文件和内置默认配置，位置靠前的设置会覆盖后面的设置。需要在不同环境间切换时，可通过 `--profile dev|staging|prod|custom|code` 选择对应的 `~/.allox/<profile>.toml` 配置文件。
@@ -126,7 +123,7 @@ Allox 会依次读取命令行选项、环境变量、本地配置文件和内�
 ```bash
 docker info
 curl http://127.0.0.1:8080/health
-allox config show
+allox-cli config show
 ```
 
 ### 1. Complete Agent Workflow
@@ -135,35 +132,35 @@ allox config show
 
 ```bash
 # 创建环境并等待 Runtime 就绪
-allox sandbox create --timeout 30m -o json
-allox session current -o json
+allox-cli sandbox create --timeout 30m -o json
+allox-cli session current -o json
 
 # Shell
-allox aio exec -- python3 -c "print('hello from allox')"
+allox-cli aio exec -- python3 -c "print('hello from allox')"
 
 # Jupyter；结果应包含 status: ok 和输出 4
-allox aio jupyter run -c "print(2 + 2)" -o json
+allox-cli aio jupyter run -c "print(2 + 2)" -o json
 
 # Browser；输出 CDP/VNC 地址，并保存截图到本地
-allox aio browser info -o json
-allox aio screenshot -f allox-demo.png -o json
+allox-cli aio browser info -o json
+allox-cli aio screenshot -f allox-demo.png -o json
 
 # 单文件上传、读取和下载
-allox file upload ./README.md /tmp/allox-README.md -o json
-allox aio read /tmp/allox-README.md
-allox file download /tmp/allox-README.md ./README.from-allox.md -o json
+allox-cli file upload ./README.md /tmp/allox-README.md -o json
+allox-cli aio read /tmp/allox-README.md
+allox-cli file download /tmp/allox-README.md ./README.from-allox.md -o json
 
 # 递归目录传输
 mkdir -p .allox-demo/nested
 printf "hello\n" > .allox-demo/nested/result.txt
-allox file upload --recursive ./.allox-demo /tmp/allox-demo -o json
-allox file download --recursive /tmp/allox-demo ./allox-demo-output -o json
+allox-cli file upload --recursive ./.allox-demo /tmp/allox-demo -o json
+allox-cli file download --recursive /tmp/allox-demo ./allox-demo-output -o json
 
 # 销毁当前环境；current session 会被自动清除
-allox sandbox kill -o json
+allox-cli sandbox kill -o json
 
 # 预期提示不存在当前 session
-allox session current
+allox-cli session current
 
 # 本地生成：allox-demo.png、README.from-allox.md、.allox-demo/、allox-demo-output/
 # 确认结果后可自行删除
@@ -175,27 +172,27 @@ allox session current
 
 ```bash
 # 创建源环境并记录 ID
-SOURCE_ID=$(allox sandbox create --timeout 30m -o json | jq -r '.id')
+SOURCE_ID=$(allox-cli sandbox create --timeout 30m -o json | jq -r '.id')
 
 # 写入 V1 并保存 Checkpoint
-allox aio exec -- sh -c "echo v1 > /home/gem/version.txt"
-CHECKPOINT_ID=$(allox checkpoint create --name v1 -o json | jq -r '.id')
+allox-cli aio exec -- sh -c "echo v1 > /home/gem/version.txt"
+CHECKPOINT_ID=$(allox-cli checkpoint create --name v1 -o json | jq -r '.id')
 
 # 将当前工作区修改为 V2
-allox aio exec -- sh -c "echo v2 > /home/gem/version.txt"
-allox checkpoint list -o json
+allox-cli aio exec -- sh -c "echo v2 > /home/gem/version.txt"
+allox-cli checkpoint list -o json
 
 # 从 V1 Checkpoint 创建新环境，并自动切换 current session
-RESTORED_ID=$(allox checkpoint restore "$CHECKPOINT_ID" --timeout 30m -o json | jq -r '.id')
+RESTORED_ID=$(allox-cli checkpoint restore "$CHECKPOINT_ID" --timeout 30m -o json | jq -r '.id')
 
 # 预期输出 v1
-allox aio exec -- cat /home/gem/version.txt
+allox-cli aio exec -- cat /home/gem/version.txt
 
 # 恢复会创建新环境，不会覆盖或销毁源环境
 # 因此需要删除 Checkpoint，并显式清理恢复环境和源环境
-allox checkpoint delete "$CHECKPOINT_ID" -o json
-allox sandbox kill "$RESTORED_ID" -o json
-allox sandbox kill "$SOURCE_ID" -o json
+allox-cli checkpoint delete "$CHECKPOINT_ID" -o json
+allox-cli sandbox kill "$RESTORED_ID" -o json
+allox-cli sandbox kill "$SOURCE_ID" -o json
 ```
 
 ### 3. Automatic Checkpoint
@@ -215,7 +212,7 @@ strict = false
 也可以为当前 session 运行前台定时保存：
 
 ```bash
-allox checkpoint watch --interval 5m
+allox-cli checkpoint watch --interval 5m
 ```
 
 `strict = false` 表示自动保存失败只产生警告，不改变原操作的成功结果。`watch` 会持续运行，按 `Ctrl+C` 停止。
@@ -226,20 +223,20 @@ MCP Server 和工具随运行镜像而变化，调用前应先发现实际能力
 
 ```bash
 # 创建环境（如当前已有 session，可省略）
-allox sandbox create --timeout 30m -o json
+allox-cli sandbox create --timeout 30m -o json
 
 # 发现 Server 和完整工具名
-allox aio mcp servers -o json
-allox aio mcp tools browser -o json
+allox-cli aio mcp servers -o json
+allox-cli aio mcp tools browser -o json
 
 # 调用浏览器工具；具体工具名以 tools 输出为准
-allox aio mcp call browser browser_navigate \
+allox-cli aio mcp call browser browser_navigate \
   --args '{"url":"https://example.com"}'
 
-allox sandbox kill -o json
+allox-cli sandbox kill -o json
 ```
 
-部分镜像没有启用全部 MCP Server，出现 404 不代表环境生命周期异常。Shell 和文件操作可分别回退到 `allox aio exec`、`allox aio read` 或 `allox file *`。
+部分镜像没有启用全部 MCP Server，出现 404 不代表环境生命周期异常。Shell 和文件操作可分别回退到 `allox-cli aio exec`、`allox-cli aio read` 或 `allox-cli file *`。
 
 详见 [MCP Server 使用说明](./docs/MCP_SERVERS.md)。
 
@@ -247,18 +244,18 @@ allox sandbox kill -o json
 
 | 命令 | 用途 |
 |---|---|
-| `allox sandbox create/list/get/endpoint/renew/pause/resume/kill` | 环境生命周期 |
-| `allox session current/use/clear` | 当前工作环境 |
-| `allox aio exec/read/screenshot` | Shell、文件读取与截图 |
-| `allox aio jupyter run` | Jupyter 代码执行 |
-| `allox aio browser info` | 获取 CDP/VNC 信息 |
-| `allox aio mcp servers/tools/call` | MCP 发现与调用 |
-| `allox checkpoint create/list/restore/delete/watch` | 工作区保存与恢复 |
-| `allox run` | 通用命令执行 |
-| `allox file cat/write/upload/download` | 文件操作与传输 |
-| `allox config init/show/set/path` | 本地配置 |
+| `allox-cli sandbox create/list/get/endpoint/renew/pause/resume/kill` | 环境生命周期 |
+| `allox-cli session current/use/clear` | 当前工作环境 |
+| `allox-cli aio exec/read/screenshot` | Shell、文件读取与截图 |
+| `allox-cli aio jupyter run` | Jupyter 代码执行 |
+| `allox-cli aio browser info` | 获取 CDP/VNC 信息 |
+| `allox-cli aio mcp servers/tools/call` | MCP 发现与调用 |
+| `allox-cli checkpoint create/list/restore/delete/watch` | 工作区保存与恢复 |
+| `allox-cli run` | 通用命令执行 |
+| `allox-cli file cat/write/upload/download` | 文件操作与传输 |
+| `allox-cli config init/show/set/path` | 本地配置 |
 
-使用 `allox <command> --help` 查看完整参数。
+使用 `allox-cli <command> --help` 查看完整参数。
 
 ## Tests: Validation and Quality
 

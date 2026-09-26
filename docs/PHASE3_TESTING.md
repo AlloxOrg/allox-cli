@@ -15,7 +15,7 @@
 | nginx | `nginx.allox_health.conf` | 复制到 `/opt/gem/nginx/` | |
 | 构建 | `cd docker && ./build.sh` | 产出 `allox/aio-custom:v1` | |
 | 推送（可选） | `REGISTRY=... ./build.sh --push` | 私有仓库可 pull | |
-| 配置镜像 | `allox config set defaults.image allox/aio-custom:v1` | `config show` 显示新 image | |
+| 配置镜像 | `allox-cli config set defaults.image allox/aio-custom:v1` | `config show` 显示新 image | |
 
 ---
 
@@ -24,8 +24,8 @@
 ### 创建与健康检查
 
 ```bash
-allox config set defaults.image allox/aio-custom:v1
-allox sandbox create -o json --timeout 5m
+allox-cli config set defaults.image allox/aio-custom:v1
+allox-cli sandbox create -o json --timeout 5m
 ```
 
 | 检查项 | 命令 | 预期 |
@@ -38,34 +38,34 @@ allox sandbox create -o json --timeout 5m
 
 ```bash
 ID=<sandbox_id>
-allox aio exec $ID -- cat /opt/allox/image-version.txt
+allox-cli aio exec $ID -- cat /opt/allox/image-version.txt
 # 预期: allox-aio-custom:v1
 
-allox aio exec $ID -- jq --version
+allox-cli aio exec $ID -- jq --version
 # 预期: jq 版本号
 
-allox aio exec $ID -- python3 -c "import httpx; print(httpx.__version__)"
+allox-cli aio exec $ID -- python3 -c "import httpx; print(httpx.__version__)"
 # 预期: 0.28.1
 
-allox aio exec $ID -- curl -sf http://127.0.0.1:8080/allox-health
+allox-cli aio exec $ID -- curl -sf http://127.0.0.1:8080/allox-health
 # 预期: {"status":"ok","service":"allox-custom","version":"v1"}
 ```
 
 ### 自定义端口 / endpoint
 
 ```bash
-allox sandbox endpoint $ID -o json
+allox-cli sandbox endpoint $ID -o json
 # aio_url 仍为 8080 入口；/allox-health 经 nginx 代理
 ```
 
 ### 阶段 1 端到端回归（ROADMAP 1.5）
 
 ```bash
-allox aio exec $ID -- echo hello
-allox aio screenshot $ID -f /tmp/phase3-test.png
-allox aio jupyter run $ID -c "print(2+2)" -o json
-allox aio browser info $ID -o json
-allox sandbox kill $ID -o json
+allox-cli aio exec $ID -- echo hello
+allox-cli aio screenshot $ID -f /tmp/phase3-test.png
+allox-cli aio jupyter run $ID -c "print(2+2)" -o json
+allox-cli aio browser info $ID -o json
+allox-cli sandbox kill $ID -o json
 ```
 
 | 步骤 | 通过 |
