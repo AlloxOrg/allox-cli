@@ -1,13 +1,36 @@
-.venv/
+# Python-generated files
 __pycache__/
-*.py[cod]
-.pytest_cache/
-.ruff_cache/
+*.py[oc]
+build/
 dist/
-*.egg-info/
-.coverage
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Ruff stuff
+.ruff_cache/
+
+# Unit test / coverage reports
 htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py.cover
+*.lcov
+.hypothesis/
+.pytest_cache/
+cover/
+
+# MacOS stuff
+.DS_Store
+
 *.png
 !docs/**/*.png
 !assets/allox-logo.png
-OpenSandbox/
