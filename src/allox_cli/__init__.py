@@ -1,3 +1,9 @@
 """Allox CLI — OpenSandbox + AIO Sandbox."""
 
-__version__ = "0.1.0"
+from importlib import metadata
+
+
+try:
+    __version__ = metadata.version("allox-cli")
+except metadata.PackageNotFoundError:
+    __version__ = "0+unknown"
