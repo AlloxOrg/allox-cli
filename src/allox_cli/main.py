@@ -7,16 +7,16 @@ from pathlib import Path
 import click
 from rich.console import Console
 
-from allox import __version__
-from allox.commands.aio import aio_group
-from allox.commands.checkpoint_cmd import checkpoint_group
-from allox.commands.config_cmd import config_group
-from allox.commands.file_cmd import file_group
-from allox.commands.run_cmd import run_command
-from allox.commands.sandbox import sandbox_group
-from allox.commands.session_cmd import session_group
-from allox.config import resolve_config, resolve_config_path
-from allox.context import ClientContext
+from allox_cli import __version__
+from allox_cli.commands.aio import aio_group
+from allox_cli.commands.checkpoint_cmd import checkpoint_group
+from allox_cli.commands.config_cmd import config_group
+from allox_cli.commands.file_cmd import file_group
+from allox_cli.commands.run_cmd import run_command
+from allox_cli.commands.sandbox import sandbox_group
+from allox_cli.commands.session_cmd import session_group
+from allox_cli.config import resolve_config, resolve_config_path
+from allox_cli.context import ClientContext
 
 BANNER = r"""[bold cyan]
      _    _ _                 _
@@ -56,7 +56,7 @@ class BannerGroup(click.Group):
     "-v", "--verbose", is_flag=True, default=False, help="Verbose HTTP / health-check logging."
 )
 @click.option("--no-color", is_flag=True, default=False)
-@click.version_option(version=__version__, prog_name="allox")
+@click.version_option(version=__version__, prog_name="allox-cli")
 @click.pass_context
 def cli(
     ctx: click.Context,

@@ -9,11 +9,11 @@ import click
 from opensandbox.models.sandboxes import SandboxFilter
 from opensandbox.sync.sandbox import SandboxSync
 
-from allox import __version__
-from allox.aio_health import make_aio_health_check
-from allox.context import ClientContext
-from allox.session import clear_current_session, get_current_session, set_current_session
-from allox.utils import (
+from allox_cli import __version__
+from allox_cli.aio_health import make_aio_health_check
+from allox_cli.context import ClientContext
+from allox_cli.session import clear_current_session, get_current_session, set_current_session
+from allox_cli.utils import (
     KEY_VALUE,
     handle_errors,
     output_option,

@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import click
 
-from allox.context import ClientContext
-from allox.session import clear_current_session, get_current_session, set_current_session
-from allox.utils import handle_errors, output_option, prepare_output
+from allox_cli.context import ClientContext
+from allox_cli.session import clear_current_session, get_current_session, set_current_session
+from allox_cli.utils import handle_errors, output_option, prepare_output
 
 
 @click.group("session", invoke_without_command=True)

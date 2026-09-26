@@ -10,10 +10,10 @@ import click
 from opensandbox.models.execd import RunCommandOpts
 from opensandbox.models.execd_sync import ExecutionHandlersSync
 
-from allox.context import ClientContext
-from allox.checkpoint import checkpoint_after_success
-from allox.session import get_current_session
-from allox.utils import (
+from allox_cli.context import ClientContext
+from allox_cli.checkpoint import checkpoint_after_success
+from allox_cli.session import get_current_session
+from allox_cli.utils import (
     handle_errors,
     output_option,
     parse_duration,
@@ -83,7 +83,7 @@ def run_command(
             sys.stdout.flush()
 
         if obj.output.fmt == "json":
-            from allox.utils import emit_json
+            from allox_cli.utils import emit_json
 
             emit_json(
                 {

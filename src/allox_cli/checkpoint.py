@@ -9,7 +9,7 @@ from typing import Any, TYPE_CHECKING
 import click
 from opensandbox.models.sandboxes import SnapshotFilter
 
-from allox.context import ClientContext
+from allox_cli.context import ClientContext
 
 if TYPE_CHECKING:
     from opensandbox.models.sandboxes import SnapshotInfo

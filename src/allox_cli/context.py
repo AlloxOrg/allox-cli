@@ -13,8 +13,8 @@ from opensandbox.config.connection_sync import ConnectionConfigSync
 from opensandbox.sync.manager import SandboxManagerSync
 from opensandbox.sync.sandbox import SandboxSync
 
-from allox.output import OutputFormatter
-from allox.session import get_current_session
+from allox_cli.output import OutputFormatter
+from allox_cli.session import get_current_session
 
 
 @dataclass
