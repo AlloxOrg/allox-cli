@@ -6,7 +6,7 @@ import httpx
 import pytest
 from click.testing import CliRunner
 
-from allox.main import cli
+from allox_cli.main import cli
 
 _MINIMAL_CONFIG = """\
 [connection]

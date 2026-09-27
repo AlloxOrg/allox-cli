@@ -11,7 +11,7 @@ FROM ghcr.io/agent-infra/sandbox:${BASE_TAG}
 
 LABEL org.opencontainers.image.title="allox-aio-custom"
 LABEL org.opencontainers.image.description="Allox custom AIO sandbox image"
-LABEL org.opencontainers.image.source="https://github.com/your-org/allox-cli"
+LABEL org.opencontainers.image.source="https://github.com/AlloxOrg/allox-cli"
 
 USER root
 

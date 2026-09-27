@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from allox.config import DEFAULT_CONFIG_DIR
+from allox_cli.config import DEFAULT_CONFIG_DIR
 
 DEFAULT_SESSIONS_PATH = DEFAULT_CONFIG_DIR / "sessions.json"
 

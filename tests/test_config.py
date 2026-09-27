@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from allox.config import resolve_config
+from allox_cli.config import resolve_config
 
 
 def test_skip_health_check_from_config(tmp_path):

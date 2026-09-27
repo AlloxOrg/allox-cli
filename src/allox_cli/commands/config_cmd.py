@@ -6,9 +6,9 @@ import json
 
 import click
 
-from allox.config import DEFAULT_CONFIG_PATH, init_config_file, load_config_file, resolve_config
-from allox.context import ClientContext
-from allox.utils import emit_json, handle_errors
+from allox_cli.config import DEFAULT_CONFIG_PATH, init_config_file, load_config_file, resolve_config
+from allox_cli.context import ClientContext
+from allox_cli.utils import emit_json, handle_errors
 
 
 @click.group("config", invoke_without_command=True)

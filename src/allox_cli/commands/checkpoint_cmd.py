@@ -7,16 +7,16 @@ import time
 import click
 from opensandbox.sync.sandbox import SandboxSync
 
-from allox.aio_health import make_aio_health_check
-from allox.checkpoint import (
+from allox_cli.aio_health import make_aio_health_check
+from allox_cli.checkpoint import (
     create_checkpoint,
     latest_ready_snapshot,
     list_snapshots,
     snapshot_to_dict,
 )
-from allox.context import ClientContext
-from allox.session import set_current_session
-from allox.utils import handle_errors, output_option, parse_duration, prepare_output
+from allox_cli.context import ClientContext
+from allox_cli.session import set_current_session
+from allox_cli.utils import handle_errors, output_option, parse_duration, prepare_output
 
 
 @click.group("checkpoint", invoke_without_command=True)

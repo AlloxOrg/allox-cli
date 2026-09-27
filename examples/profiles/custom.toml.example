@@ -1,5 +1,5 @@
 # Allox custom AIO image profile
-# Usage: allox --config ~/.allox/custom.toml sandbox create
+# Usage: allox-cli --config ~/.allox/custom.toml sandbox create
 # Or copy to ~/.allox/custom.toml and use --profile custom
 
 [connection]

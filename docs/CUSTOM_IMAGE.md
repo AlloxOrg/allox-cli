@@ -31,18 +31,18 @@ REGISTRY=your-registry.io/allox TAG=v1 ./build.sh --push
 
 默认产出镜像：`allox/aio-custom:v1`（基于 `ghcr.io/agent-infra/sandbox:1.0.0.150`）。
 
-## 配置 allox 使用自定义镜像
+## 配置 Allox 使用自定义镜像
 
 ```bash
-allox config set defaults.image allox/aio-custom:v1
-allox config show
+allox-cli config set defaults.image allox/aio-custom:v1
+allox-cli config show
 ```
 
 或在 profile 中覆盖（见 `examples/profiles/custom.toml.example`）：
 
 ```bash
 cp examples/profiles/custom.toml.example ~/.allox/custom.toml
-allox --profile custom sandbox create -o json
+allox-cli --profile custom sandbox create -o json
 ```
 
 > `--profile custom` 需在 `main.py` 的 profile 列表中包含 `custom`，或使用 `--config ~/.allox/custom.toml`。
@@ -86,7 +86,7 @@ RUN rm -f /opt/gem/supervisord/supervisord.code_server.conf \
           /opt/gem/nginx/code_server.conf
 ```
 
-删减后 `allox aio *` 中与 VSCode 相关的 URL 将不可用；shell / browser / MCP 等仍走 `/v1`。
+删减后 `allox-cli aio *` 中与 VSCode 相关的 URL 将不可用；shell / browser / MCP 等仍走 `/v1`。
 
 ## 验证清单
 
@@ -96,25 +96,25 @@ RUN rm -f /opt/gem/supervisord/supervisord.code_server.conf \
 
 ```bash
 # 1. 创建（health_check 应通过）
-allox sandbox create -o json
+allox-cli sandbox create -o json
 
 # 2. 验证额外 apt 依赖
-allox aio exec -- jq --version
+allox-cli aio exec -- jq --version
 
 # 3. 验证自定义路由
-allox aio exec -- curl -sf http://127.0.0.1:8080/allox-health
+allox-cli aio exec -- curl -sf http://127.0.0.1:8080/allox-health
 
 # 4. 阶段 1 端到端仍通过
-allox aio exec -- ls -la
-allox aio screenshot -f /tmp/test.png
-allox sandbox kill
+allox-cli aio exec -- ls -la
+allox-cli aio screenshot -f /tmp/test.png
+allox-cli sandbox kill
 ```
 
 ## 端口说明
 
 | 端口 | 服务 | 访问方式 |
 |------|------|----------|
-| 8080 | AIO 主入口（nginx） | `allox sandbox endpoint` → `aio_url` |
+| 8080 | AIO 主入口（nginx） | `allox-cli sandbox endpoint` → `aio_url` |
 | 9090 | 自定义 health（内部） | 经 nginx `/allox-health` 代理 |
 | 8888 | Jupyter | AIO portal |
 | 8200 | Code Server | `/code-server/`（若未删减） |

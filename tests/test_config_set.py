@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from allox.config import load_config_file
+from allox_cli.config import load_config_file
 
 
 def test_config_set_preserves_and_quotes_string_values(runner):

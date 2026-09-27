@@ -8,8 +8,8 @@
 文档与 README 中的 server / 工具名可能与**当前镜像版本**不一致。调用前务必先盘点：
 
 ```bash
-allox aio mcp servers -o json
-allox aio mcp tools <server> -o json | jq '.tools[].name'
+allox-cli aio mcp servers -o json
+allox-cli aio mcp tools <server> -o json | jq '.tools[].name'
 ```
 
 常见差异：
@@ -24,7 +24,7 @@ allox aio mcp tools <server> -o json | jq '.tools[].name'
 
 | 方式 | 端点 | 说明 |
 |------|------|------|
-| REST（**allox CLI 使用**） | `GET /v1/mcp/servers`、`GET /v1/mcp/{server}/tools`、`POST /v1/mcp/{server}/tools/{tool}` | `agent-sandbox` SDK `client.mcp.*` |
+| REST（**Allox CLI 使用**） | `GET /v1/mcp/servers`、`GET /v1/mcp/{server}/tools`、`POST /v1/mcp/{server}/tools/{tool}` | `agent-sandbox` SDK `client.mcp.*` |
 | MCP Hub 协议 | `GET/POST http://<aio>:8080/mcp` | 扁平工具名如 `browser_navigate`；与 REST 命名可能不同 |
 
 ## 镜像可能内置的 MCP Server
@@ -42,43 +42,43 @@ allox aio mcp tools <server> -o json | jq '.tools[].name'
 
 ```bash
 # 1. 盘点（可省略 sandbox_id，使用当前 session）
-allox aio mcp servers -o json
-allox aio mcp tools browser -o json | jq '.tools[].name'
+allox-cli aio mcp servers -o json
+allox-cli aio mcp tools browser -o json | jq '.tools[].name'
 
 # 2. browser：使用 tools 列表中的完整名称
-allox aio mcp call browser browser_navigate \
+allox-cli aio mcp call browser browser_navigate \
   --args '{"url":"https://example.com"}' -o json
 
-allox aio mcp call browser browser_screenshot -o json
+allox-cli aio mcp call browser browser_screenshot -o json
 
 # 3. shell / file：仅当 servers 列表中存在时再调用
-allox aio mcp call shell exec --arg command="echo hello" -o json   # 若 404 见下文
-allox aio mcp call file list --args '{"path":"/home/gem"}' -o json
+allox-cli aio mcp call shell exec --arg command="echo hello" -o json   # 若 404 见下文
+allox-cli aio mcp call file list --args '{"path":"/home/gem"}' -o json
 
 # 4. 无 shell/file MCP 时的等效命令
-allox aio exec -- echo hello
-allox aio exec -- ls -la /home/gem
-allox aio read /home/gem/某个文件
+allox-cli aio exec -- echo hello
+allox-cli aio exec -- ls -la /home/gem
+allox-cli aio read /home/gem/某个文件
 ```
 
 ## 与 `aio exec` / `aio read` 的分工
 
 | 场景 | 推荐命令 |
 |------|----------|
-| 人类 / 脚本直接跑 shell、读文件 | `allox aio exec`、`allox aio read`（**始终可用**） |
-| 仅 browser MCP 已启用 | `allox aio mcp call browser <tool>` |
-| Agent 统一 MCP 工具面、跨 server 编排 | `allox aio mcp call`（server 存在时） |
-| 浏览器截图保存到本机 | `allox aio screenshot`（专用命令更简单） |
-| 查工具参数 schema | `allox aio mcp tools <server>` |
+| 人类 / 脚本直接跑 shell、读文件 | `allox-cli aio exec`、`allox-cli aio read`（**始终可用**） |
+| 仅 browser MCP 已启用 | `allox-cli aio mcp call browser <tool>` |
+| Agent 统一 MCP 工具面、跨 server 编排 | `allox-cli aio mcp call`（server 存在时） |
+| 浏览器截图保存到本机 | `allox-cli aio screenshot`（专用命令更简单） |
+| 查工具参数 schema | `allox-cli aio mcp tools <server>` |
 
 ## 实测校验脚本
 
 ```bash
-allox aio mcp servers -o json | jq .
+allox-cli aio mcp servers -o json | jq .
 
 for s in browser file shell markitdown; do
   echo "=== $s ==="
-  allox aio mcp tools "$s" -o json 2>/dev/null | jq '.tools[].name' || echo "(server not configured)"
+  allox-cli aio mcp tools "$s" -o json 2>/dev/null | jq '.tools[].name' || echo "(server not configured)"
 done
 ```
 

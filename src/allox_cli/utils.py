@@ -10,7 +10,7 @@ from datetime import timedelta
 
 import click
 
-from allox.context import ClientContext
+from allox_cli.context import ClientContext
 
 _SANDBOX_ID_RE = re.compile(
     r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",

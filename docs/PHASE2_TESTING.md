@@ -36,7 +36,7 @@ uv run pytest -m integration -v -rs           # 集成，并打印 skip 原因
 ```text
 ============================= test session starts ==============================
 platform darwin -- Python 3.12.13, pytest-9.0.3, pluggy-1.6.0
-rootdir: /Users/kn0wn/Desktop/Agent/allox-cli
+rootdir: <repository-root>
 configfile: pyproject.toml
 collected 38 items / 11 deselected / 27 selected
 
@@ -100,7 +100,7 @@ SKIPPED [11] OpenSandbox server not reachable at localhost:8080
 
 ## 3. CLI 实际输出摘录
 
-### 3.1 `allox --help`（尾部，阶段 2 新增项）
+### 3.1 `allox-cli --help`（尾部，阶段 2 新增项）
 
 ```text
   --config PATH
@@ -139,7 +139,7 @@ Commands:
 ### 3.4 `aio exec --help`（可选 SANDBOX_ID + workdir）
 
 ```text
-Usage: allox aio exec [OPTIONS] [SANDBOX_ID] COMMAND...
+Usage: allox-cli aio exec [OPTIONS] [SANDBOX_ID] COMMAND...
 
 Options:
   -w, --workdir TEXT       Working directory (absolute path in sandbox).
@@ -150,16 +150,16 @@ Options:
 ### 3.5 `run` / `file` / `sandbox renew`
 
 ```text
-# allox run
-Usage: allox run [OPTIONS] [SANDBOX_ID] COMMAND...
+# allox-cli run
+Usage: allox-cli run [OPTIONS] [SANDBOX_ID] COMMAND...
   -w, --workdir TEXT
   -o, --output [raw|json]
 
-# allox file
+# allox-cli file
 Commands: cat, write
 
-# allox sandbox renew
-Usage: allox sandbox renew [OPTIONS] [SANDBOX_ID]
+# allox-cli sandbox renew
+Usage: allox-cli sandbox renew [OPTIONS] [SANDBOX_ID]
   -t, --timeout TEXT  [required]
   -o, --output [table|json|yaml]
 ```
@@ -176,7 +176,7 @@ Usage: allox sandbox renew [OPTIONS] [SANDBOX_ID]
 }
 ```
 
-### 3.7 `allox session current -o json`（期望）
+### 3.7 `allox-cli session current -o json`（期望）
 
 ```json
 {
@@ -186,7 +186,7 @@ Usage: allox sandbox renew [OPTIONS] [SANDBOX_ID]
 }
 ```
 
-### 3.8 `allox sandbox create -o json`（阶段 2 新增字段）
+### 3.8 `allox-cli sandbox create -o json`（阶段 2 新增字段）
 
 ```json
 {
@@ -200,7 +200,7 @@ Usage: allox sandbox renew [OPTIONS] [SANDBOX_ID]
 
 `aio_ready_seconds` 仅在未 `--skip-health-check` 且健康检查通过时出现。
 
-### 3.9 `allox -v sandbox create`（verbose 健康检查，stderr 片段）
+### 3.9 `allox-cli -v sandbox create`（verbose 健康检查，stderr 片段）
 
 ```text
 [verbose] AIO health check: GET http://127.0.0.1:41163/v1/shell/sessions (timeout 30.0s)
@@ -209,7 +209,7 @@ Usage: allox sandbox renew [OPTIONS] [SANDBOX_ID]
 [verbose] AIO ready in 8.42s
 ```
 
-### 3.10 `allox sandbox list`（Rich 表格，table 模式）
+### 3.10 `allox-cli sandbox list`（Rich 表格，table 模式）
 
 非 JSON 时输出 Rich 表格，列含 `ID`、`STATE`（带状态色），而非纯 TSV。
 
@@ -218,7 +218,7 @@ Usage: allox sandbox renew [OPTIONS] [SANDBOX_ID]
 ```text
 Error: Failed to connect to AIO sandbox 'bad-id': ...
 Hints:
-  • Check endpoint: allox sandbox endpoint bad-id
+  • Check endpoint: allox-cli sandbox endpoint bad-id
   • Ensure OpenSandbox server is reachable and firewall allows the port
   • Verify AIO health: GET /v1/shell/sessions returns 200
 ```
@@ -236,15 +236,15 @@ Sandbox error [INTERNAL_UNKNOWN_ERROR]: None
 ### 4.1 会话与省略 sandbox_id（2.1）
 
 ```bash
-allox config set connection.domain localhost:8080
-allox sandbox create -o json --timeout 10m | tee /tmp/allox-create.json
+allox-cli config set connection.domain localhost:8080
+allox-cli sandbox create -o json --timeout 10m | tee /tmp/allox-create.json
 cat ~/.allox/sessions.json
 
-allox session current -o json
-allox aio exec ls -la                    # 省略 id
-allox aio exec -w /home/gem pwd
-allox aio screenshot -f /tmp/p2-test.png # 省略 id
-allox sandbox endpoint -o json         # 省略 id
+allox-cli session current -o json
+allox-cli aio exec ls -la                    # 省略 id
+allox-cli aio exec -w /home/gem pwd
+allox-cli aio screenshot -f /tmp/p2-test.png # 省略 id
+allox-cli sandbox endpoint -o json         # 省略 id
 ```
 
 **期望**：
@@ -260,13 +260,13 @@ cat ~/.allox/sessions.json
     "created_at": "2026-06-08T16:27:45+00:00"
   }
 }
-allox session current -o json
+allox-cli session current -o json
 {
   "sandbox_id": "0b15a961-1428-4c51-8c13-c850ff959928",
   "aio_url": "http://127.0.0.1:51305",
   "created_at": "2026-06-08T16:27:45+00:00"
 }
-allox aio exec ls -la 
+allox-cli aio exec ls -la
 total 52
 drwxr-x--- 10 gem  gem  4096 Jun  9 09:33 .
 drwxr-xr-x  1 root root 4096 Jun  9 09:33 ..
@@ -282,14 +282,14 @@ drwxrwxr-x  3 gem  gem  4096 Jun  9 09:33 .npm-global
 drwx------  3 gem  gem  4096 Jun  9 09:33 .pki
 -rw-r--r--  1 gem  gem   807 Jan  7  2022 .profile
 -rw-rw-r--  1 gem  gem     0 Jun  9 09:33 .Xauthority%  
-allox aio exec -w /home/gem pwd
+allox-cli aio exec -w /home/gem pwd
 /home/gem%       
-allox aio screenshot -f /tmp/p2-test.png
+allox-cli aio screenshot -f /tmp/p2-test.png
 ╭────────────────────────────────── Screenshot Saved ──────────────────────────────────╮
 │ sandbox_id: 835c267b-8a48-4898-976c-44b2369f503f                                     │
 │ path: /private/tmp/p2-test.png                                                       │
 ╰──────────────────────────────────────────────────────────────────────────────────────╯      
-allox sandbox endpoint -o json 
+allox-cli sandbox endpoint -o json
 {
   "sandbox_id": "835c267b-8a48-4898-976c-44b2369f503f",
   "aio_url": "http://127.0.0.1:58984"
@@ -298,24 +298,24 @@ allox sandbox endpoint -o json
 ### 4.2 session use / clear（2.1）
 
 ```bash
-allox session clear
-allox session current                  # 期望 ClickException
-allox session use "$(jq -r .id /tmp/allox-create.json)" -o json
-allox session current -o json
+allox-cli session clear
+allox-cli session current                  # 期望 ClickException
+allox-cli session use "$(jq -r .id /tmp/allox-create.json)" -o json
+allox-cli session current -o json
 ```
-allox session current
+allox-cli session current
 ╭────────────────────────────────── Current Session ───────────────────────────────────╮
 │ sandbox_id: 835c267b-8a48-4898-976c-44b2369f503f                                     │
 │ aio_url: http://127.0.0.1:58984                                                      │
 │ created_at: 2026-06-09T01:33:33+00:00                                                │
 ╰──────────────────────────────────────────────────────────────────────────────────────╯
-allox session use "$(jq -r .id /tmp/allox-create.json)" -o json
+allox-cli session use "$(jq -r .id /tmp/allox-create.json)" -o json
 {
   "sandbox_id": "835c267b-8a48-4898-976c-44b2369f503f",
   "aio_url": "http://127.0.0.1:58984",
   "created_at": "2026-06-09T01:36:41+00:00"
 }
-allox session current -o json
+allox-cli session current -o json
 {
   "sandbox_id": "835c267b-8a48-4898-976c-44b2369f503f",
   "aio_url": "http://127.0.0.1:58984",
@@ -325,16 +325,16 @@ allox session current -o json
 ### 4.3 输出格式 yaml / list 表格（2.2）
 
 ```bash
-allox sandbox list
-allox sandbox list -o json
-allox sandbox list -o yaml
-allox sandbox get -o yaml
+allox-cli sandbox list
+allox-cli sandbox list -o json
+allox-cli sandbox list -o yaml
+allox-cli sandbox get -o yaml
 ```
 
 ### 4.4 renew（2.4）
 
 ```bash
-allox sandbox renew --timeout 15m -o json
+allox-cli sandbox renew --timeout 15m -o json
 ```
 
 期望 JSON 片段：
@@ -349,12 +349,12 @@ allox sandbox renew --timeout 15m -o json
 ### 4.5 配置项与 profile（2.3 / 2.4）
 
 ```bash
-allox config set defaults.ready_timeout 60s
-allox config set defaults.aio_health_path /v1/shell/sessions
-allox config show
+allox-cli config set defaults.ready_timeout 60s
+allox-cli config set defaults.aio_health_path /v1/shell/sessions
+allox-cli config show
 
 cp ~/.allox/config.toml ~/.allox/dev.toml
-allox --profile dev sandbox list -o json
+allox-cli --profile dev sandbox list -o json
 ```
 
 ### 4.6 metadata 默认值（2.3）
@@ -373,8 +373,8 @@ allox --profile dev sandbox list -o json
 ### 4.7 清理
 
 ```bash
-allox sandbox kill -o json             # 省略 id；应清除 current session
-allox session current                  # 期望报错「No current session」
+allox-cli sandbox kill -o json             # 省略 id；应清除 current session
+allox-cli session current                  # 期望报错「No current session」
 ```
 
 ---
@@ -415,8 +415,8 @@ allox session current                  # 期望报错「No current session」
 ### 步骤 1：盘点（必做）
 
 ```bash
-allox aio mcp servers -o json | jq .
-allox aio mcp tools browser -o json | jq '.tools[].name'
+allox-cli aio mcp servers -o json | jq .
+allox-cli aio mcp tools browser -o json | jq '.tools[].name'
 ```
 
 - **至少**应含 `browser` server；`file` / `shell` / `markitdown` 视镜像而定。
@@ -426,14 +426,14 @@ allox aio mcp tools browser -o json | jq '.tools[].name'
 
 ```bash
 # 导航（工具名以 tools 列表为准）
-allox aio mcp call browser browser_navigate \
+allox-cli aio mcp call browser browser_navigate \
   --args '{"url":"https://example.com"}' -o json
 
 # 或截图（通常更稳定）
-allox aio mcp call browser browser_screenshot -o json
+allox-cli aio mcp call browser browser_screenshot -o json
 ```
 
-(allox-cli) kn0wn@kn0wndeMacBook-Air allox-cli % allox aio mcp tools browser -o json | jq '.tools[].name'
+$ allox-cli aio mcp tools browser -o json | jq '.tools[].name'
 "browser_navigate"
 "browser_go_back"
 "browser_go_forward"
@@ -457,7 +457,7 @@ allox aio mcp call browser browser_screenshot -o json
 "browser_scroll"
 "browser_close"
 "browser_press_key"
-(allox-cli) kn0wn@kn0wndeMacBook-Air allox-cli % allox aio mcp call browser browser_navigate \
+$ allox-cli aio mcp call browser browser_navigate \
   --args '{"url":"https://example.com"}' -o json
 {
   "sandbox_id": "383fabfc-8115-4301-92ef-19b3b4d95187",
@@ -490,30 +490,30 @@ allox aio mcp call browser browser_screenshot -o json
 
 ```bash
 # 若 servers 含 shell：
-allox aio mcp call shell exec --arg command="echo mcp-hello" -o json
+allox-cli aio mcp call shell exec --arg command="echo mcp-hello" -o json
 
 # 若 servers 含 file：
-allox aio mcp call file list --args '{"path":"/home/gem"}' -o json
+allox-cli aio mcp call file list --args '{"path":"/home/gem"}' -o json
 ```
 
 **404 `not found in configuration` 时的等效命令**：
 
 ```bash
-allox aio exec -- echo mcp-hello
-allox aio exec -- ls -la /home/gem
+allox-cli aio exec -- echo mcp-hello
+allox-cli aio exec -- ls -la /home/gem
 ```
 
 ### 步骤 4：markitdown（可选，server 存在时）
 
 ```bash
-allox aio exec -- bash -c 'echo "# hi" > /tmp/sample.md'
-allox aio mcp call markitdown convert --args '{"path":"/tmp/sample.md"}' -o json
+allox-cli aio exec -- bash -c 'echo "# hi" > /tmp/sample.md'
+allox-cli aio mcp call markitdown convert --args '{"path":"/tmp/sample.md"}' -o json
 ```
 
 ### 省略 sandbox_id
 
 ```bash
-allox aio mcp tools browser -o json    # 使用 current session
+allox-cli aio mcp tools browser -o json    # 使用 current session
 ```
 
 ### 自动化
@@ -534,48 +534,48 @@ opensandbox-server
 # 终端 2
 cd allox-cli
 source .venv/bin/activate    # 或 uv sync --no-editable
-allox config set connection.domain localhost:8080
+allox-cli config set connection.domain localhost:8080
 
 # ── 创建 + session ──
-allox -v sandbox create -o json --timeout 10m | tee /tmp/allox-p2-create.json
+allox-cli -v sandbox create -o json --timeout 10m | tee /tmp/allox-p2-create.json
 cat ~/.allox/sessions.json
-allox session current -o json
+allox-cli session current -o json
 
 # ── 省略 sandbox_id ──
-allox aio exec ls -la
-allox aio exec -w /home/gem pwd
-allox aio jupyter run -c 'print(2+2)' -o json
-allox aio browser info -o json
-allox aio screenshot -f /tmp/allox-p2.png
+allox-cli aio exec ls -la
+allox-cli aio exec -w /home/gem pwd
+allox-cli aio jupyter run -c 'print(2+2)' -o json
+allox-cli aio browser info -o json
+allox-cli aio screenshot -f /tmp/allox-p2.png
 
 # ── MCP（阶段 2.6；先盘点再调用）──
-allox aio mcp servers -o json | jq .
-allox aio mcp tools browser -o json | jq '.tools[].name'
-allox aio mcp call browser browser_navigate \
+allox-cli aio mcp servers -o json | jq .
+allox-cli aio mcp tools browser -o json | jq '.tools[].name'
+allox-cli aio mcp call browser browser_navigate \
   --args '{"url":"https://example.com"}' -o json
 # shell/file 仅当 servers 列表有时再测；否则用 exec：
-allox aio exec -- echo mcp-hello
-allox aio exec -- ls -la /home/gem
+allox-cli aio exec -- echo mcp-hello
+allox-cli aio exec -- ls -la /home/gem
 
 # ── 输出格式 ──
-allox sandbox list
-allox sandbox list -o yaml
-allox sandbox renew --timeout 15m -o json
+allox-cli sandbox list
+allox-cli sandbox list -o yaml
+allox-cli sandbox renew --timeout 15m -o json
 
 # ── execd ──
-allox run -- echo "execd ok"
-allox file cat /etc/hostname
-echo "p2" | allox file write /tmp/alox-p2-hello.txt
-allox file cat /tmp/alox-p2-hello.txt
+allox-cli run -- echo "execd ok"
+allox-cli file cat /etc/hostname
+echo "p2" | allox-cli file write /tmp/alox-p2-hello.txt
+allox-cli file cat /tmp/alox-p2-hello.txt
 
 # ── session 切换 ──
-allox session clear
-allox session use "$(jq -r .id /tmp/allox-p2-create.json)"
-allox session current
+allox-cli session clear
+allox-cli session use "$(jq -r .id /tmp/allox-p2-create.json)"
+allox-cli session current
 
 # ── 清理 ──
-allox sandbox kill -o json
-allox session current    # 应失败
+allox-cli sandbox kill -o json
+allox-cli session current    # 应失败
 
 # ── 集成（阶段 1 + 2.6 MCP）──
 uv run pytest -m integration tests/test_integration_e2e.py tests/test_integration_mcp.py -v -rs
@@ -591,7 +591,7 @@ uv run pytest -m integration tests/test_integration_e2e.py tests/test_integratio
 - [ ] `-v` 打印健康检查日志
 - [ ] `aio exec -w` 生效
 - [ ] `sandbox renew --timeout` 返回 `expires_at`
-- [ ] `allox run` / `file cat|write` 可用
+- [ ] `allox-cli run` / `file cat|write` 可用
 - [ ] `--profile dev` 读取 `~/.allox/dev.toml`
 - [ ] `kill` 后 session 自动清除
 - [ ] `aio mcp servers` 至少含 `browser`（其余 server 视镜像）
@@ -616,7 +616,7 @@ uv run pytest -m integration tests/test_integration_e2e.py tests/test_integratio
 
 1. `uv run pytest -q -m "not integration"` → 输出应含 **`27 passed`**（见 §2.2）。  
 2. 平台就绪：`uv run pytest -m integration -v` → 至多 **`11 passed`**（1 条 e2e + 10 条 MCP；`shell`/`file`/`markitdown` 未配置时为 skip）。  
-3. `allox --help` 含 `session`、`run`、`file`、`--profile`、`-v`（见 §3.1）。  
+3. `allox-cli --help` 含 `session`、`run`、`file`、`--profile`、`-v`（见 §3.1）。
 4. `sandbox create --help` 含 `-o yaml`、`--ready-timeout`（见 §3.3）。  
 5. Server 端口与 `connection.domain` 均为 **8080**（OpenSandbox），勿与 8090 混用。
 
@@ -626,14 +626,14 @@ uv run pytest -m integration tests/test_integration_e2e.py tests/test_integratio
 
 | 路径 | 用途 |
 |------|------|
-| `src/allox/session.py` | `~/.allox/sessions.json` 读写 |
-| `src/allox/commands/session_cmd.py` | `session` 子命令 |
-| `src/allox/commands/run_cmd.py` | `run`（execd） |
-| `src/allox/commands/file_cmd.py` | `file cat|write`（execd） |
-| `src/allox/output.py` | table / json / yaml / raw |
-| `src/allox/aio_health.py` | 可配置健康检查 + verbose |
-| `src/allox/mcp_utils.py` | MCP 参数解析与输出格式化 |
-| `src/allox/commands/aio.py` | `aio mcp servers|tools|call` |
+| `src/allox_cli/session.py` | `~/.allox/sessions.json` 读写 |
+| `src/allox_cli/commands/session_cmd.py` | `session` 子命令 |
+| `src/allox_cli/commands/run_cmd.py` | `run`（execd） |
+| `src/allox_cli/commands/file_cmd.py` | `file cat|write`（execd） |
+| `src/allox_cli/output.py` | table / json / yaml / raw |
+| `src/allox_cli/aio_health.py` | 可配置健康检查 + verbose |
+| `src/allox_cli/mcp_utils.py` | MCP 参数解析与输出格式化 |
+| `src/allox_cli/commands/aio.py` | `aio mcp servers|tools|call` |
 | `docs/MCP_SERVERS.md` | MCP server 盘点与 CLI 示例 |
 | `tests/test_mcp_utils.py` | MCP 参数单元测试 |
 | `tests/test_integration_mcp.py` | MCP 集成测试（`@integration`） |

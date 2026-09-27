@@ -7,11 +7,16 @@ from typing import Any
 
 import click
 
-from allox.context import ClientContext
-from allox.checkpoint import checkpoint_after_success
-from allox.session import get_current_session
-from allox.mcp_utils import build_mcp_request, format_mcp_call_raw, model_to_dict, parse_mcp_target
-from allox.utils import (
+from allox_cli.context import ClientContext
+from allox_cli.checkpoint import checkpoint_after_success
+from allox_cli.session import get_current_session
+from allox_cli.mcp_utils import (
+    build_mcp_request,
+    format_mcp_call_raw,
+    model_to_dict,
+    parse_mcp_target,
+)
+from allox_cli.utils import (
     KEY_VALUE,
     emit_json,
     handle_errors,

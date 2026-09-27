@@ -7,7 +7,7 @@ from typing import Any
 
 import click
 
-from allox.utils import looks_like_sandbox_id
+from allox_cli.utils import looks_like_sandbox_id
 
 
 def parse_mcp_target(

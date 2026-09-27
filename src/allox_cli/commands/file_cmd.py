@@ -12,9 +12,9 @@ from tempfile import NamedTemporaryFile, mkdtemp
 import click
 from opensandbox.models.filesystem import DirectoryListEntry, WriteEntry
 
-from allox.context import ClientContext
-from allox.checkpoint import checkpoint_after_success
-from allox.utils import handle_errors, output_option, prepare_output
+from allox_cli.context import ClientContext
+from allox_cli.checkpoint import checkpoint_after_success
+from allox_cli.utils import handle_errors, output_option, prepare_output
 
 
 @click.group("file", invoke_without_command=True)
@@ -45,7 +45,7 @@ def file_cat(
     try:
         content = sandbox.files.read_file(path, encoding=encoding)
         if obj.output.fmt == "json":
-            from allox.utils import emit_json
+            from allox_cli.utils import emit_json
 
             emit_json({"sandbox_id": resolved_id, "path": path, "content": content})
             return
